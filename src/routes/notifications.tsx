@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createFileRoute as _unused } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
