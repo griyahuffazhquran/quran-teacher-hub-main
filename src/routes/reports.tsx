@@ -62,12 +62,12 @@ function Page() {
                 </div>
                 {r.note && <p className="text-xs text-muted-foreground">Catatan: {r.note}</p>}
                 {r.homework && (
-                  <p className="text-xs">
-                    PR: {r.homework}{" "}
-                    <Badge variant={r.homeworkDone ? "default" : "secondary"} className="ml-1">
+                  <div className="flex flex-wrap items-center gap-1 text-xs">
+                    <span>PR: {r.homework}</span>
+                    <Badge variant={r.homeworkDone ? "default" : "secondary"}>
                       {r.homeworkDone ? "Selesai" : "Belum"}
                     </Badge>
-                  </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
