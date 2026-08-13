@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/AppShell";
-import { PageHeader, PlaceholderPanel } from "@/components/layout/PageHeader";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCollection } from "@/hooks/use-repository";
+import { reportRepo, teacherRepo } from "@/lib/data/repositories";
+import { formatDate, reportTypeLabel, sortByDateDesc, teacherName } from "@/lib/data/selectors";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({
@@ -15,10 +21,59 @@ export const Route = createFileRoute("/reports")({
 });
 
 function Page() {
+  const { rows: reports, ready } = useCollection(reportRepo);
+  const { rows: teachers } = useCollection(teacherRepo);
+
   return (
     <AppShell>
-      <PageHeader title="Setoran" description="Catatan setoran materi dan penilaian mustami'." />
-      <PlaceholderPanel title="Form setoran" note="Pembuatan laporan setoran akan tersedia pada fase Core Report." />
+      <PageHeader
+        title="Setoran"
+        description="Catatan setoran materi dan penilaian mustami' dari data lokal."
+      />
+      {!ready ? (
+        <div className="space-y-3">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      ) : reports.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+            Belum ada setoran tercatat.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {sortByDateDesc(reports).map((r) => (
+            <Card key={r.id}>
+              <CardContent className="space-y-2 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{teacherName(teachers, r.teacherId)}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(r.date)}</p>
+                  </div>
+                  <Badge variant="secondary">{reportTypeLabel[r.type]}</Badge>
+                </div>
+                <p className="text-sm">
+                  {r.surah} ayat {r.fromAyah}–{r.toAyah}
+                </p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Mustami': {r.mustamiName}</span>
+                  <span className="font-semibold">{r.score}</span>
+                </div>
+                {r.note && <p className="text-xs text-muted-foreground">Catatan: {r.note}</p>}
+                {r.homework && (
+                  <p className="text-xs">
+                    PR: {r.homework}{" "}
+                    <Badge variant={r.homeworkDone ? "default" : "secondary"} className="ml-1">
+                      {r.homeworkDone ? "Selesai" : "Belum"}
+                    </Badge>
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </AppShell>
   );
 }
