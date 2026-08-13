@@ -7,7 +7,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { mobileNav, primaryNav, secondaryNav, type NavItem } from "./nav-items";
 import { cn } from "@/lib/utils";
 
-function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
+function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: (() => void) | undefined }) {
   return (
     <Link
       to={item.to}
@@ -35,7 +35,7 @@ function Brand() {
   );
 }
 
-function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarNav({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
   return (
     <div className="flex h-full flex-col gap-6 p-4">
       <Brand />
