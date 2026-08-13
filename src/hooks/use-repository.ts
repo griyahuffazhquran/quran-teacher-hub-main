@@ -1,16 +1,19 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Repository } from "@/lib/data/repository";
 import { hydrateAll } from "@/lib/data/repositories";
 
 type Base = { id: string; createdAt: string; updatedAt: string };
 
 /**
- * Subscribes a component to a repository. Returns rows and a `ready` flag that
- * is false during SSR / before hydration so markup stays stable.
+ * Subscribes a component to a repository. `ready` is false during SSR and the
+ * first client render so markup stays stable, then flips to true after hydration.
  */
 export function useCollection<T extends Base>(repo: Repository<T>) {
+  const [ready, setReady] = useState(false);
+
   useEffect(() => {
     hydrateAll();
+    setReady(true);
   }, []);
 
   const rows = useSyncExternalStore(
@@ -19,18 +22,5 @@ export function useCollection<T extends Base>(repo: Repository<T>) {
     () => [] as T[],
   );
 
-  const ready = typeof window !== "undefined" && rows.length >= 0 && isHydrated();
-
   return { rows, ready, repo };
-}
-
-let hydratedFlag = false;
-if (typeof window !== "undefined") {
-  // set after first client tick; used only for skeleton gating
-  queueMicrotask(() => {
-    hydratedFlag = true;
-  });
-}
-function isHydrated() {
-  return hydratedFlag;
 }
