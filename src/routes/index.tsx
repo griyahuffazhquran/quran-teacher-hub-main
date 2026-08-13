@@ -1,24 +1,65 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AppShell } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Dashboard | Griya Huffazh Quran Upgrading" },
+      {
+        name: "description",
+        content:
+          "Dashboard sistem manajemen upgrading guru Griya Huffazh Quran: pantau setoran, target, dan progres pengajar.",
+      },
+      { property: "og:title", content: "Dashboard | Griya Huffazh Quran Upgrading" },
+      {
+        property: "og:description",
+        content: "Pantau setoran, target, dan progres upgrading guru Griya Huffazh Quran.",
+      },
+    ],
+  }),
+  component: Dashboard,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+const stats = [
+  { label: "Total Setoran", value: "—" },
+  { label: "Setoran Bulan Ini", value: "—" },
+  { label: "Rata-rata Nilai", value: "—" },
+  { label: "PR Aktif", value: "—" },
+];
+
+function Dashboard() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
+    <AppShell>
+      <PageHeader
+        title="Dashboard"
+        description="Ringkasan aktivitas upgrading. Data akan aktif setelah lapisan data dibangun."
       />
-    </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <Card key={stat.label}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
+                {stat.label}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold">{stat.value}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle className="text-base">Aktivitas Terakhir</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Belum ada data. Fondasi layout, navigasi, dan tema sudah siap.
+          </p>
+        </CardContent>
+      </Card>
+    </AppShell>
   );
 }
