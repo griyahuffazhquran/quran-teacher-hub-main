@@ -1,6 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute as _unused } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/AppShell";
-import { PageHeader, PlaceholderPanel } from "@/components/layout/PageHeader";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCollection } from "@/hooks/use-repository";
+import { notificationRepo } from "@/lib/data/repositories";
+import { unreadCount } from "@/lib/data/selectors";
 
 export const Route = createFileRoute("/notifications")({
   head: () => ({
@@ -15,10 +23,59 @@ export const Route = createFileRoute("/notifications")({
 });
 
 function Page() {
+  const { rows, ready, repo } = useCollection(notificationRepo);
+
   return (
     <AppShell>
-      <PageHeader title="Notifikasi" description="Pemberitahuan aktivitas upgrading Anda." />
-      <PlaceholderPanel title="Notifikasi" note="Notifikasi akan aktif setelah lapisan data dan laporan tersedia." />
+      <PageHeader
+        title="Notifikasi"
+        description={
+          ready ? `${unreadCount(rows)} belum dibaca` : "Pemberitahuan aktivitas upgrading Anda."
+        }
+        actions={
+          ready && rows.length > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => rows.forEach((n) => !n.read && repo.update(n.id, { read: true }))}
+            >
+              Tandai semua dibaca
+            </Button>
+          ) : undefined
+        }
+      />
+      {!ready ? (
+        <div className="space-y-3">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      ) : rows.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+            Tidak ada notifikasi.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {rows.map((n) => (
+            <Card key={n.id} className={n.read ? "opacity-70" : ""}>
+              <CardContent className="flex items-start justify-between gap-3 p-4">
+                <div className="min-w-0">
+                  <p className="font-medium">{n.title}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{n.body}</p>
+                </div>
+                {!n.read ? (
+                  <Button size="sm" variant="ghost" onClick={() => repo.update(n.id, { read: true })}>
+                    Tandai
+                  </Button>
+                ) : (
+                  <Badge variant="secondary">Dibaca</Badge>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </AppShell>
   );
 }
