@@ -11,15 +11,22 @@ const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
 export function hydrateSession() {
-  if (hydrated || typeof window === "undefined") return;
-  hydrated = true;
-  try {
-    const raw = window.localStorage.getItem(SESSION_KEY);
-    session = raw ? (JSON.parse(raw) as Session) : null;
-  } catch {
-    session = null;
+  if (typeof window === "undefined") return;
+  if (!hydrated) {
+    hydrated = true;
+    try {
+      const raw = window.localStorage.getItem(SESSION_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Session;
+        if (parsed && typeof parsed === "object" && parsed.userId) {
+          session = parsed;
+        }
+      }
+    } catch {
+      // ignore iframe storage access errors, keep session in memory
+    }
+    emit();
   }
-  emit();
 }
 
 export function getSession(): Session {

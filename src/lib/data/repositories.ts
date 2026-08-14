@@ -29,6 +29,14 @@ export const allRepos = [
 
 export function hydrateAll() {
   for (const repo of allRepos) repo.hydrate();
+  // Self-heal: If teachers repo is empty after hydration (e.g. empty/corrupted localStorage in sandboxed iframe), re-seed
+  if (teacherRepo.list().length === 0) {
+    teacherRepo.replaceAll(seedTeachers());
+    reportRepo.replaceAll(seedReports());
+    targetRepo.replaceAll(seedTargets());
+    notificationRepo.replaceAll(seedNotifications());
+    activityRepo.replaceAll(seedActivityLogs());
+  }
 }
 
 export function resetDemoData() {

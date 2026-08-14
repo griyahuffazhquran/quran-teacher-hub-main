@@ -20,10 +20,8 @@ export function login(username: string, password: string): LoginResult {
   if (!uname) return { ok: false, error: "Username wajib diisi." };
   if (!password) return { ok: false, error: "Password wajib diisi." };
 
-  const user = teacherRepo
-    .list()
-    .map(normalizeTeacher)
-    .find((t) => t.username.toLowerCase() === uname);
+  const list = teacherRepo.list().map(normalizeTeacher);
+  const user = list.find((t) => (t.username || "").toLowerCase() === uname);
 
   if (!user) return { ok: false, error: "Akun tidak ditemukan." };
   if (user.status !== "aktif") return { ok: false, error: "Akun tidak aktif." };
@@ -38,11 +36,13 @@ export function logout() {
 }
 
 export function currentUser(): Teacher | undefined {
+  hydrateAll();
   hydrateSession();
   const s = getSession();
   if (!s) return undefined;
-  const found = teacherRepo.list().find((t) => t.id === s.userId);
-  return found ? normalizeTeacher(found) : undefined;
+  const list = teacherRepo.list().map(normalizeTeacher);
+  const found = list.find((t) => t.id === s.userId);
+  return found;
 }
 
 export function roleOf(user: Teacher | undefined): UserRole | undefined {

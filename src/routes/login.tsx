@@ -44,17 +44,23 @@ function LoginPage() {
     setLoading(true);
     setError("");
 
-    // Simulate smooth loading animation delay for realistic authentication UX
     setTimeout(() => {
-      const result = login(usr, pass);
-      if (!result.ok) {
-        setError(result.error);
+      try {
+        const result = login(usr, pass);
+        if (!result.ok) {
+          setError(result.error);
+          setLoading(false);
+          return;
+        }
+        toast.success(`Selamat datang, ${result.user.name}`);
         setLoading(false);
-        return;
+        void navigate({ to: "/" });
+      } catch (err) {
+        console.error("Login failed:", err);
+        setError("Terjadi kesalahan saat masuk. Silakan coba lagi.");
+        setLoading(false);
       }
-      toast.success(`Selamat datang, ${result.user.name}`);
-      void navigate({ to: "/" });
-    }, 700);
+    }, 300);
   };
 
   const submit = (e: React.FormEvent) => {
