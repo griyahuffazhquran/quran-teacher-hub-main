@@ -58,17 +58,37 @@ export type Report = {
 };
 
 export type TargetPeriod = "bulanan" | "semester" | "tahunan";
+export type TargetStatus = "aktif" | "tercapai" | "gagal";
 
 export type Target = {
   id: ID;
   teacherId: ID;
   title: string;
+  description?: string;
   period: TargetPeriod;
+  status: TargetStatus;
   startDate: string;
   dueDate: string;
   targetValue: number;
   currentValue: number;
   unit: string;
+  createdBy?: ID;
+  isDeleted?: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReminderFrequency = "once" | "daily" | "weekly";
+
+export type Reminder = {
+  id: ID;
+  targetId: ID;
+  teacherId: ID;
+  title: string;
+  message: string;
+  frequency: ReminderFrequency;
+  remindAt: string; // ISO date
+  dismissed: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -104,7 +124,10 @@ export type NotificationType =
   | "FEEDBACK_CREATED"
   | "COMMENT_CREATED"
   | "TARGET_CREATED"
+  | "TARGET_UPDATED"
+  | "TARGET_COMPLETED"
   | "TARGET_NEAR_DEADLINE"
+  | "REMINDER_TRIGGERED"
   | "HOMEWORK_PENDING"
   | "ACHIEVEMENT_UNLOCKED"
   | "ANNOUNCEMENT_CREATED"
@@ -123,6 +146,7 @@ export type NotificationItem = {
   targetId?: ID;
   feedbackId?: ID;
   commentId?: ID;
+  reminderId?: ID;
   createdAt: string;
   updatedAt: string;
 };
@@ -143,6 +167,7 @@ export type Entity =
   | Teacher
   | Report
   | Target
+  | Reminder
   | Feedback
   | ReportComment
   | NotificationItem

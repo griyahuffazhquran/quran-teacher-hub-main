@@ -5,6 +5,7 @@ import {
   seedComments,
   seedFeedbacks,
   seedNotifications,
+  seedReminders,
   seedReports,
   seedTargets,
   seedTeachers,
@@ -14,6 +15,7 @@ import type {
   ActivityLog,
   Feedback,
   NotificationItem,
+  Reminder,
   Report,
   ReportComment,
   Target,
@@ -23,6 +25,7 @@ import type {
 export const teacherRepo = createRepository<Teacher>("teachers", seedTeachers);
 export const reportRepo = createRepository<Report>("reports", seedReports, migrateReports);
 export const targetRepo = createRepository<Target>("targets", seedTargets);
+export const reminderRepo = createRepository<Reminder>("reminders", seedReminders);
 export const feedbackRepo = createRepository<Feedback>("feedbacks", seedFeedbacks);
 export const commentRepo = createRepository<ReportComment>("comments", seedComments);
 export const notificationRepo = createRepository<NotificationItem>(
@@ -35,6 +38,7 @@ export const allRepos = [
   teacherRepo,
   reportRepo,
   targetRepo,
+  reminderRepo,
   feedbackRepo,
   commentRepo,
   notificationRepo,
@@ -48,6 +52,7 @@ export function hydrateAll() {
     teacherRepo.replaceAll(seedTeachers());
     reportRepo.replaceAll(seedReports());
     targetRepo.replaceAll(seedTargets());
+    reminderRepo.replaceAll(seedReminders());
     feedbackRepo.replaceAll(seedFeedbacks());
     commentRepo.replaceAll(seedComments());
     notificationRepo.replaceAll(seedNotifications());
@@ -60,6 +65,7 @@ export function resetDemoData() {
   teacherRepo.replaceAll(seedTeachers());
   reportRepo.replaceAll(seedReports());
   targetRepo.replaceAll(seedTargets());
+  reminderRepo.replaceAll(seedReminders());
   feedbackRepo.replaceAll(seedFeedbacks());
   commentRepo.replaceAll(seedComments());
   notificationRepo.replaceAll(seedNotifications());

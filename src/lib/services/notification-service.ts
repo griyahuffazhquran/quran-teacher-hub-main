@@ -4,13 +4,14 @@ import type { ActivityLog, NotificationItem, NotificationType } from "@/lib/data
 export function notify(input: {
   title: string;
   body: string;
-  level?: NotificationItem["level"];
-  type?: NotificationType;
-  userId?: string;
-  reportId?: string;
-  targetId?: string;
-  feedbackId?: string;
-  commentId?: string;
+  level?: NotificationItem["level"] | undefined;
+  type?: NotificationType | undefined;
+  userId?: string | undefined;
+  reportId?: string | undefined;
+  targetId?: string | undefined;
+  feedbackId?: string | undefined;
+  commentId?: string | undefined;
+  reminderId?: string | undefined;
 }): NotificationItem {
   return notificationRepo.create({
     title: input.title,
@@ -23,16 +24,17 @@ export function notify(input: {
     ...(input.targetId ? { targetId: input.targetId } : {}),
     ...(input.feedbackId ? { feedbackId: input.feedbackId } : {}),
     ...(input.commentId ? { commentId: input.commentId } : {}),
+    ...(input.reminderId ? { reminderId: input.reminderId } : {}),
   });
 }
 
 export function logActivity(input: {
   action: string;
   description: string;
-  actorId?: string;
-  actorName?: string;
-  entity?: string;
-  entityId?: string;
+  actorId?: string | undefined;
+  actorName?: string | undefined;
+  entity?: string | undefined;
+  entityId?: string | undefined;
 }) {
   return activityRepo.create({
     action: input.action,
