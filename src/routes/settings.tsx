@@ -58,6 +58,14 @@ import {
   resetDatabaseToDemo,
 } from "@/lib/services/backup-service";
 import {
+  exportAchievementsCSV,
+  exportActivityLogsCSV,
+  exportAllDatabaseTablesCSV,
+  exportAnnouncementsCSV,
+  exportCommentsCSV,
+  exportFeedbacksCSV,
+  exportNotificationsCSV,
+  exportRemindersCSV,
   exportReportsCSV,
   exportTargetsCSV,
   exportTeachersCSV,
@@ -250,73 +258,241 @@ function SettingsPage() {
 
         {/* TAB 2: EKSPOR & LAPORAN */}
         <TabsContent value="export" className="mt-4 space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="p-4 space-y-3">
-              <div className="size-9 grid place-items-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <FileSpreadsheet className="size-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-sm text-foreground">Ekspor Setoran (CSV)</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Unduh seluruh data riwayat setoran guru beserta nilai dan catatan PR dalam format CSV.
+          {/* Featured Hero Card for Google Sheets Migration */}
+          <Card className="border-emerald-500/40 bg-gradient-to-r from-emerald-500/10 via-card to-primary/10 p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
+                    Google Sheets & AppsScript Ready 📊
+                  </Badge>
+                </div>
+                <h3 className="font-bold text-base text-foreground">
+                  Paket Migrasi Database Lengkap (10 Tabel CSV)
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
+                  Unduh seluruh koleksi database Griya Huffazh Quran dalam format CSV terstruktur (UTF-8 BOM), siap diunggah dan diimpor langsung ke Google Sheets / Google Apps Script Backend.
                 </p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-xs font-medium gap-1.5"
-                onClick={() => {
-                  exportReportsCSV(reportRows, teachers);
-                  toast.success("Unduhan CSV setoran dimulai.");
-                }}
-              >
-                <Download className="size-3.5" /> Unduh Setoran CSV
-              </Button>
-            </Card>
 
-            <Card className="p-4 space-y-3">
-              <div className="size-9 grid place-items-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                <FileSpreadsheet className="size-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-sm text-foreground">Ekspor Target Upgrading (CSV)</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Unduh data target upgrading guru, capaian nilai, dan status tenggat dalam format CSV.
-                </p>
-              </div>
               <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-xs font-medium gap-1.5"
                 onClick={() => {
-                  exportTargetsCSV(targetRows, teachers);
-                  toast.success("Unduhan CSV target dimulai.");
+                  exportAllDatabaseTablesCSV(allRepos);
+                  toast.success("Memulai pengunduhan 10 berkas CSV database...");
                 }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs h-10 px-4 shrink-0 shadow-sm gap-2"
               >
-                <Download className="size-3.5" /> Unduh Target CSV
+                <Download className="size-4" /> Unduh Semua Tabel (10 CSV)
               </Button>
-            </Card>
+            </div>
+          </Card>
 
-            <Card className="p-4 space-y-3">
-              <div className="size-9 grid place-items-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                <FileSpreadsheet className="size-5" />
+          {/* Grid of Individual Tables */}
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {/* 1. Teachers */}
+            <Card className="p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-xs text-foreground">1. teachers.csv</h4>
+                <Badge variant="outline" className="text-[10px]">Guru</Badge>
               </div>
-              <div>
-                <h4 className="font-bold text-sm text-foreground">Ekspor Master Data Guru (CSV)</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Unduh data pengajar, jabatan, spesialisasi, dan status keanggotaan dalam format CSV.
-                </p>
-              </div>
+              <p className="text-[11px] text-muted-foreground line-clamp-2">Master data guru, jabatan, spesialisasi, dan status.</p>
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full text-xs font-medium gap-1.5"
+                className="w-full text-xs h-8 gap-1.5"
                 onClick={() => {
                   exportTeachersCSV(teachers);
-                  toast.success("Unduhan CSV data guru dimulai.");
+                  toast.success("Unduhan teachers.csv dimulai.");
                 }}
               >
-                <Download className="size-3.5" /> Unduh Data Guru CSV
+                <Download className="size-3" /> Unduh CSV
+              </Button>
+            </Card>
+
+            {/* 2. Reports */}
+            <Card className="p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-xs text-foreground">2. reports.csv</h4>
+                <Badge variant="outline" className="text-[10px]">Setoran</Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground line-clamp-2">Riwayat setoran hafalan, matn, hadits, dan nilai.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs h-8 gap-1.5"
+                onClick={() => {
+                  exportReportsCSV(reportRows, teachers);
+                  toast.success("Unduhan reports.csv dimulai.");
+                }}
+              >
+                <Download className="size-3" /> Unduh CSV
+              </Button>
+            </Card>
+
+            {/* 3. Targets */}
+            <Card className="p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-xs text-foreground">3. targets.csv</h4>
+                <Badge variant="outline" className="text-[10px]">Target</Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground line-clamp-2">Target upgrading guru, capaian nilai, dan tenggat.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs h-8 gap-1.5"
+                onClick={() => {
+                  exportTargetsCSV(targetRows, teachers);
+                  toast.success("Unduhan targets.csv dimulai.");
+                }}
+              >
+                <Download className="size-3" /> Unduh CSV
+              </Button>
+            </Card>
+
+            {/* 4. Reminders */}
+            <Card className="p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-xs text-foreground">4. reminders.csv</h4>
+                <Badge variant="outline" className="text-[10px]">Reminder</Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground line-clamp-2">Pengingat target terjadwal dan frekuensi.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs h-8 gap-1.5"
+                onClick={() => {
+                  const reminders = (allRepos.find((r) => r.name === "reminders")?.list() || []) as any[];
+                  exportRemindersCSV(reminders);
+                  toast.success("Unduhan reminders.csv dimulai.");
+                }}
+              >
+                <Download className="size-3" /> Unduh CSV
+              </Button>
+            </Card>
+
+            {/* 5. Feedbacks */}
+            <Card className="p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-xs text-foreground">5. feedbacks.csv</h4>
+                <Badge variant="outline" className="text-[10px]">Feedback</Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground line-clamp-2">Catatan evaluasi resmi Mustami & Upgrader.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs h-8 gap-1.5"
+                onClick={() => {
+                  const feedbacks = (allRepos.find((r) => r.name === "feedbacks")?.list() || []) as any[];
+                  exportFeedbacksCSV(feedbacks);
+                  toast.success("Unduhan feedbacks.csv dimulai.");
+                }}
+              >
+                <Download className="size-3" /> Unduh CSV
+              </Button>
+            </Card>
+
+            {/* 6. Comments */}
+            <Card className="p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-xs text-foreground">6. comments.csv</h4>
+                <Badge variant="outline" className="text-[10px]">Komentar</Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground line-clamp-2">Thread diskusi & respons komentar setoran.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs h-8 gap-1.5"
+                onClick={() => {
+                  const comments = (allRepos.find((r) => r.name === "comments")?.list() || []) as any[];
+                  exportCommentsCSV(comments);
+                  toast.success("Unduhan comments.csv dimulai.");
+                }}
+              >
+                <Download className="size-3" /> Unduh CSV
+              </Button>
+            </Card>
+
+            {/* 7. Announcements */}
+            <Card className="p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-xs text-foreground">7. announcements.csv</h4>
+                <Badge variant="outline" className="text-[10px]">Pengumuman</Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground line-clamp-2">Daftar pengumuman resmi dan status pin.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs h-8 gap-1.5"
+                onClick={() => {
+                  const ann = (allRepos.find((r) => r.name === "announcements")?.list() || []) as any[];
+                  exportAnnouncementsCSV(ann);
+                  toast.success("Unduhan announcements.csv dimulai.");
+                }}
+              >
+                <Download className="size-3" /> Unduh CSV
+              </Button>
+            </Card>
+
+            {/* 8. Notifications */}
+            <Card className="p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-xs text-foreground">8. notifications.csv</h4>
+                <Badge variant="outline" className="text-[10px]">Notifikasi</Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground line-clamp-2">Riwayat notifikasi pemberitahuan pengguna.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs h-8 gap-1.5"
+                onClick={() => {
+                  const notifs = (allRepos.find((r) => r.name === "notifications")?.list() || []) as any[];
+                  exportNotificationsCSV(notifs);
+                  toast.success("Unduhan notifications.csv dimulai.");
+                }}
+              >
+                <Download className="size-3" /> Unduh CSV
+              </Button>
+            </Card>
+
+            {/* 9. Achievements */}
+            <Card className="p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-xs text-foreground">9. achievements.csv</h4>
+                <Badge variant="outline" className="text-[10px]">Gamifikasi</Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground line-clamp-2">Lencana pencapaian dan poin XP guru.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs h-8 gap-1.5"
+                onClick={() => {
+                  const ach = (allRepos.find((r) => r.name === "achievements")?.list() || []) as any[];
+                  exportAchievementsCSV(ach);
+                  toast.success("Unduhan achievements.csv dimulai.");
+                }}
+              >
+                <Download className="size-3" /> Unduh CSV
+              </Button>
+            </Card>
+
+            {/* 10. Activity Logs */}
+            <Card className="p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-xs text-foreground">10. activity_logs.csv</h4>
+                <Badge variant="outline" className="text-[10px]">System Log</Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground line-clamp-2">Jejak audit dan log aktivitas lembaga.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs h-8 gap-1.5"
+                onClick={() => {
+                  const logs = (allRepos.find((r) => r.name === "activityLogs")?.list() || []) as any[];
+                  exportActivityLogsCSV(logs);
+                  toast.success("Unduhan activity_logs.csv dimulai.");
+                }}
+              >
+                <Download className="size-3" /> Unduh CSV
               </Button>
             </Card>
           </div>
