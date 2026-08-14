@@ -3,8 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   Download,
   FileSpreadsheet,
+  Globe,
   HardDrive,
   Info,
+  Link2,
   Megaphone,
   Pencil,
   Pin,
@@ -33,6 +35,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCollection } from "@/hooks/use-repository";
@@ -57,6 +61,8 @@ import {
   importFullDatabaseJSON,
   resetDatabaseToDemo,
 } from "@/lib/services/backup-service";
+import { getGasApiUrl, isGasApiConfigured, setGasApiUrl } from "@/lib/config/api-config";
+import { syncAllFromGas } from "@/lib/services/gas-api-service";
 import {
   exportAchievementsCSV,
   exportActivityLogsCSV,
@@ -96,6 +102,30 @@ function SettingsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAnn, setEditingAnn] = useState<Announcement | undefined>(undefined);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+
+  const [gasUrlInput, setGasUrlInput] = useState(getGasApiUrl());
+  const [syncingGas, setSyncingGas] = useState(false);
+
+  const handleSaveGasUrl = () => {
+    setGasApiUrl(gasUrlInput);
+    toast.success("URL API Google Apps Script berhasil disimpan.");
+  };
+
+  const handleSyncGas = async () => {
+    if (!gasUrlInput.trim()) {
+      toast.error("Masukkan URL API Google Apps Script terlebih dahulu.");
+      return;
+    }
+    setGasApiUrl(gasUrlInput);
+    setSyncingGas(true);
+    const res = await syncAllFromGas();
+    setSyncingGas(false);
+    if (res.ok) {
+      toast.success(`Sinkronisasi berhasil! ${res.count || 0} koleksi data diperbarui dari Google Sheets.`);
+    } else {
+      toast.error(res.error || "Gagal sinkronisasi data.");
+    }
+  };
 
   const teachers = listTeachers(teacherRows);
   const annList = listAnnouncements(announcements, role);
@@ -500,6 +530,64 @@ function SettingsPage() {
 
         {/* TAB 3: CADANGAN & PEMULIHAN */}
         <TabsContent value="backup" className="mt-4 space-y-4">
+          {/* Google Apps Script API Connection Card */}
+          <Card className="border-emerald-500/40 bg-card p-4 space-y-3.5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="size-8 grid place-items-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <Globe className="size-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-foreground flex items-center gap-2">
+                    Koneksi Backend Google Apps Script (Live Database)
+                    {isGasApiConfigured() ? (
+                      <Badge variant="default" className="bg-emerald-600 text-white text-[10px]">Aktif</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px]">Belum Diatur</Badge>
+                    )}
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Hubungkan aplikasi ini ke URL Web App Google Apps Script untuk login & sinkronisasi database live.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <Label className="text-xs font-semibold flex items-center gap-1">
+                <Link2 className="size-3 text-emerald-600" /> URL Web App Google Apps Script:
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                  value={gasUrlInput}
+                  onChange={(e) => setGasUrlInput(e.target.value)}
+                  className="h-9 text-xs flex-1 font-mono"
+                />
+                <Button
+                  onClick={handleSaveGasUrl}
+                  variant="outline"
+                  className="h-9 text-xs font-medium shrink-0"
+                >
+                  Simpan URL
+                </Button>
+                <Button
+                  onClick={handleSyncGas}
+                  disabled={syncingGas}
+                  className="h-9 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 gap-1.5"
+                >
+                  {syncingGas ? (
+                    <>Menyinkronkan...</>
+                  ) : (
+                    <>
+                      <RefreshCw className="size-3.5" /> Sinkronkan Sekarang
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </Card>
+
           <div className="grid gap-4 md:grid-cols-2">
             {/* Export Backup JSON */}
             <Card className="p-4 space-y-3">

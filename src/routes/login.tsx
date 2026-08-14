@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useSession } from "@/hooks/use-session";
-import { DEMO_PASSWORD, demoAccounts, login } from "@/lib/services/auth-service";
+import { DEMO_PASSWORD, demoAccounts, login, loginAsync } from "@/lib/services/auth-service";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -33,34 +33,32 @@ function LoginPage() {
   const { user, ready } = useSession();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (ready && user) void navigate({ to: "/" });
   }, [ready, user, navigate]);
 
-  const handleLogin = (usr: string, pass: string) => {
+  const handleLogin = async (u: string, p: string) => {
+    setError(null);
     setLoading(true);
-    setError("");
 
-    setTimeout(() => {
-      try {
-        const result = login(usr, pass);
-        if (!result.ok) {
-          setError(result.error);
-          setLoading(false);
-          return;
-        }
-        toast.success(`Selamat datang, ${result.user.name}`);
+    try {
+      const result = await loginAsync(u, p);
+      if (!result.ok) {
+        setError(result.error);
         setLoading(false);
-        void navigate({ to: "/" });
-      } catch (err) {
-        console.error("Login failed:", err);
-        setError("Terjadi kesalahan saat masuk. Silakan coba lagi.");
-        setLoading(false);
+        return;
       }
-    }, 300);
+      toast.success(`Selamat datang, ${result.user.name}`);
+      setLoading(false);
+      void navigate({ to: "/" });
+    } catch (err) {
+      console.error("Login failed:", err);
+      setError("Terjadi kesalahan saat masuk. Silakan coba lagi.");
+      setLoading(false);
+    }
   };
 
   const submit = (e: React.FormEvent) => {

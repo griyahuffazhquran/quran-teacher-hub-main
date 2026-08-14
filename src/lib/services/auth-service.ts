@@ -14,6 +14,24 @@ export const demoAccounts = [
 
 export type LoginResult = { ok: true; user: Teacher } | { ok: false; error: string };
 
+import { isGasApiConfigured } from "@/lib/config/api-config";
+import { loginWithGas } from "./gas-api-service";
+
+export async function loginAsync(username: string, password: string): Promise<LoginResult> {
+  if (isGasApiConfigured()) {
+    const gasRes = await loginWithGas(username, password);
+    if (gasRes.ok && gasRes.user) {
+      return { ok: true, user: gasRes.user };
+    }
+    // If GAS returns specific error, pass it along
+    if (gasRes.error) {
+      return { ok: false, error: gasRes.error };
+    }
+  }
+
+  return login(username, password);
+}
+
 export function login(username: string, password: string): LoginResult {
   hydrateAll();
   const uname = username.trim().toLowerCase();
