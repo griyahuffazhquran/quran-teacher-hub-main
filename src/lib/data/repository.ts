@@ -99,8 +99,12 @@ export function createRepository<T extends Base>(
       if (!hydrated && typeof window !== "undefined") {
         hydrate();
       }
+      const target = rows.find((r) => r.id === id);
       rows = rows.filter((r) => r.id !== id);
       persist();
+      if (target) {
+        void pushMutationToGas(name, "delete", target);
+      }
     },
     replaceAll: (next) => {
       rows = next;

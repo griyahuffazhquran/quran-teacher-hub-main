@@ -260,7 +260,7 @@ function normalizeRow(repoName: string, row: any): any {
   }
 }
 
-/** Synchronizes all 10 collections safely from Google Apps Script to local repositories */
+/** Synchronizes all 10 collections safely from Google Apps Script to local repositories in parallel */
 export async function syncAllFromGas(): Promise<{ ok: boolean; count?: number; error?: string }> {
   if (!isGasApiConfigured()) {
     return { ok: false, error: "URL API belum diisi di Pengaturan." };
@@ -283,27 +283,35 @@ export async function syncAllFromGas(): Promise<{ ok: boolean; count?: number; e
     let syncedCount = 0;
     let lastError = "";
 
-    for (const item of actions) {
-      try {
-        const res = await fetchFromGas(item.action);
-        if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
-          const repo = allRepos.find((r) => r.name === item.repoName);
-          if (repo) {
-            const normalizedRows = res.data
-              .map((row: any) => normalizeRow(item.repoName, row))
-              .filter(Boolean);
+    const results = await Promise.all(
+      actions.map(async (item) => {
+        try {
+          const res = await fetchFromGas(item.action);
+          if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+            const repo = allRepos.find((r) => r.name === item.repoName);
+            if (repo) {
+              const normalizedRows = res.data
+                .map((row: any) => normalizeRow(item.repoName, row))
+                .filter(Boolean);
 
-            if (normalizedRows.length > 0) {
-              repo.replaceAll(normalizedRows);
-              syncedCount++;
+              if (normalizedRows.length > 0) {
+                repo.replaceAll(normalizedRows);
+                return { ok: true, error: undefined };
+              }
             }
+          } else if (!res.ok && res.error) {
+            return { ok: false, error: res.error };
           }
-        } else if (!res.ok && res.error) {
-          lastError = res.error;
+        } catch (err: any) {
+          console.warn(`Sinkronisasi koleksi ${item.repoName} dilewati:`, err);
         }
-      } catch (err: any) {
-        console.warn(`Sinkronisasi koleksi ${item.repoName} dilewati:`, err);
-      }
+        return { ok: false, error: undefined };
+      }),
+    );
+
+    for (const r of results) {
+      if (r.ok) syncedCount++;
+      if (r.error) lastError = r.error;
     }
 
     hydrateAll();
@@ -617,10 +625,10 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
   }
 }
 
-/** Pushes local creation or edit mutation to Google Apps Script API in background */
+/** Pushes local creation, edit, or delete mutation to Google Apps Script API in background */
 export async function pushMutationToGas(
   repoName: string,
-  mutationType: "create" | "update",
+  mutationType: "create" | "update" | "delete",
   item: any,
 ): Promise<void> {
   if (!isGasApiConfigured() || !item || !item.id) return;
@@ -677,6 +685,24 @@ export async function pushMutationToGas(
         break;
       default:
         action = `update${repoName.charAt(0).toUpperCase() + repoName.slice(1)}`;
+        break;
+    }
+  } else if (mutationType === "delete") {
+    switch (repoName) {
+      case "teachers":
+        action = "deleteTeacher";
+        break;
+      case "reports":
+        action = "deleteReport";
+        break;
+      case "targets":
+        action = "deleteTarget";
+        break;
+      case "announcements":
+        action = "deleteAnnouncement";
+        break;
+      default:
+        action = `delete${repoName.charAt(0).toUpperCase() + repoName.slice(1)}`;
         break;
     }
   }

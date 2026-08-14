@@ -9,7 +9,9 @@ import { NotificationPopover } from "./NotificationPopover";
 import { mobileNav, primaryNav, secondaryNav, type NavItem } from "./nav-items";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/hooks/use-session";
+import { useAutoSync } from "@/hooks/use-auto-sync";
 import { logout } from "@/lib/services/auth-service";
+import { SyncStatusBadge } from "./SyncStatusBadge";
 
 function NavLink({
   item,
@@ -174,6 +176,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const { user, role, ready } = useSession();
+  useAutoSync();
 
   useEffect(() => {
     if (ready && !user) void navigate({ to: "/login" });
@@ -258,6 +261,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </p>
 
           <div className="ml-auto flex items-center gap-1.5">
+            <SyncStatusBadge />
             <NotificationPopover />
             <ThemeToggle />
             {user && (
