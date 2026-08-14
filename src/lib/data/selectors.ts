@@ -12,11 +12,30 @@ export function isThisMonth(dateISO: string): boolean {
 
 export const gradeValue: Record<Grade, number> = { A: 95, B: 85, C: 75, D: 65 };
 
+export function parseGrade(raw: any): Grade {
+  if (raw === null || raw === undefined) return "B";
+  const str = String(raw).trim().toUpperCase();
+  if (str === "A" || str === "B" || str === "C" || str === "D") {
+    return str as Grade;
+  }
+  const num = Number(raw);
+  if (!isNaN(num) && num > 0) {
+    if (num >= 90) return "A";
+    if (num >= 80) return "B";
+    if (num >= 70) return "C";
+    return "D";
+  }
+  return "B";
+}
+
 export function averageScore(reports: Report[]): number | null {
-  if (reports.length === 0) return null;
-  return Math.round(
-    reports.reduce((sum, r) => sum + (gradeValue[r.grade] ?? 0), 0) / reports.length,
-  );
+  if (!reports || reports.length === 0) return null;
+  const total = reports.reduce((sum, r) => {
+    const g = parseGrade(r.grade);
+    return sum + (gradeValue[g] ?? 85);
+  }, 0);
+  const avg = Math.round(total / reports.length);
+  return isNaN(avg) ? null : avg;
 }
 
 export function averageGrade(reports: Report[]): Grade | null {

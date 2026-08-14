@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate, materialLabel, statusLabel } from "@/lib/data/selectors";
+import { formatDate, materialLabel, parseGrade, statusLabel } from "@/lib/data/selectors";
 import type { Report, Teacher } from "@/lib/data/types";
 
 const gradeTone: Record<Report["grade"], "default" | "secondary" | "destructive"> = {
@@ -94,8 +94,8 @@ export function ReportTable({
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex flex-col items-center gap-1">
-                    <Badge variant={gradeTone[report.grade]} className="text-xs px-2 font-bold">
-                      {report.grade}
+                    <Badge variant={gradeTone[parseGrade(report.grade)] ?? "secondary"} className="text-xs px-2 font-bold">
+                      {parseGrade(report.grade)}
                     </Badge>
                     <span className="text-[10px] text-muted-foreground">
                       {statusLabel[report.status]}

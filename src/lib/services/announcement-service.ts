@@ -7,6 +7,7 @@ export type CreateAnnouncementInput = {
   content: string;
   audience?: AnnouncementAudience | undefined;
   pinned?: boolean | undefined;
+  dueDate?: string | undefined;
 };
 
 export function listAnnouncements(
@@ -27,6 +28,17 @@ export function listAnnouncements(
     });
 }
 
+export function hasActiveDeadlineAnnouncements(announcements: Announcement[]): boolean {
+  const today = new Date().toISOString().slice(0, 10);
+  return announcements.some((a) => {
+    if (a.pinned) return true;
+    if (a.dueDate) {
+      return a.dueDate >= today;
+    }
+    return false;
+  });
+}
+
 export function createAnnouncement(
   input: CreateAnnouncementInput,
   author: Teacher,
@@ -38,6 +50,7 @@ export function createAnnouncement(
     authorName: author.name,
     pinned: input.pinned ?? false,
     audience: input.audience ?? "all",
+    ...(input.dueDate ? { dueDate: input.dueDate } : {}),
   });
 
   notify({
@@ -70,6 +83,7 @@ export function updateAnnouncement(
     ...(input.content ? { content: input.content } : {}),
     ...(input.audience ? { audience: input.audience } : {}),
     ...(input.pinned !== undefined ? { pinned: input.pinned } : {}),
+    ...(input.dueDate !== undefined ? { dueDate: input.dueDate } : {}),
   });
 
   if (updated) {

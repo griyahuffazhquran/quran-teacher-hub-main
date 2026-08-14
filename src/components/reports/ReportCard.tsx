@@ -2,7 +2,7 @@ import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatDate, materialLabel, statusLabel } from "@/lib/data/selectors";
+import { formatDate, materialLabel, parseGrade, statusLabel } from "@/lib/data/selectors";
 import type { Report, Teacher } from "@/lib/data/types";
 
 const gradeTone: Record<Report["grade"], "default" | "secondary" | "destructive"> = {
@@ -30,6 +30,7 @@ export function ReportCard({
   onToggleHomework?: (r: Report) => void;
 }) {
   const assessed = teachers.find((t) => t.id === report.teacherId)?.name ?? "—";
+  const safeGrade = parseGrade(report.grade);
 
   return (
     <Card className="transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group">
@@ -45,8 +46,8 @@ export function ReportCard({
             <Badge variant="secondary" className="text-xs">
               {materialLabel[report.material]}
             </Badge>
-            <Badge variant={gradeTone[report.grade]} className="font-bold">
-              {report.grade}
+            <Badge variant={gradeTone[safeGrade] ?? "secondary"} className="font-bold">
+              {safeGrade}
             </Badge>
           </div>
         </div>

@@ -1,25 +1,49 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BookOpenText, LogOut, Menu, PanelLeft, PanelLeftClose, X } from "lucide-react";
+import {
+  BookOpenText,
+  LogOut,
+  Menu,
+  PanelLeft,
+  PanelLeftClose,
+  X,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  Heart,
+} from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from "./ThemeToggle";
 import { NotificationPopover } from "./NotificationPopover";
-import { mobileNav, primaryNav, secondaryNav, type NavItem } from "./nav-items";
+import { getMobileNav, getPrimaryNav, getSecondaryNav, type NavItem } from "./nav-items";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/hooks/use-session";
 import { useAutoSync } from "@/hooks/use-auto-sync";
 import { logout } from "@/lib/services/auth-service";
 import { SyncStatusBadge } from "./SyncStatusBadge";
+import { useCollection } from "@/hooks/use-repository";
+import { announcementRepo } from "@/lib/data/repositories";
+import { hasActiveDeadlineAnnouncements } from "@/lib/services/announcement-service";
 
 function NavLink({
   item,
   collapsed,
+  hasBadge,
   onNavigate,
 }: {
   item: NavItem;
   collapsed?: boolean;
+  hasBadge?: boolean;
   onNavigate?: (() => void) | undefined;
 }) {
   const content = (
@@ -28,12 +52,23 @@ function NavLink({
       onClick={onNavigate}
       activeOptions={{ exact: item.to === "/" }}
       className={cn(
-        "group flex items-center gap-3 rounded-xl py-2.5 font-medium text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground data-[status=active]:bg-sidebar-primary/15 data-[status=active]:text-sidebar-primary data-[status=active]:font-semibold",
+        "group relative flex items-center gap-3 rounded-xl py-2.5 font-medium text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground data-[status=active]:bg-sidebar-primary/15 data-[status=active]:text-sidebar-primary data-[status=active]:font-semibold",
         collapsed ? "justify-center px-0 size-11" : "px-3 text-sm",
       )}
     >
-      <item.icon className="size-5 shrink-0 transition-transform duration-200 group-hover:scale-110" />
-      {!collapsed && <span className="truncate">{item.label}</span>}
+      <div className="relative flex items-center justify-center">
+        <item.icon className="size-5 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+        {hasBadge && (
+          <span className="absolute -top-1 -right-1 flex size-2.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
+            <span className="relative inline-flex size-2.5 rounded-full bg-destructive border border-background"></span>
+          </span>
+        )}
+      </div>
+      {!collapsed && <span className="truncate flex-1">{item.label}</span>}
+      {!collapsed && hasBadge && (
+        <span className="size-2 rounded-full bg-destructive animate-pulse" />
+      )}
     </Link>
   );
 
@@ -53,29 +88,46 @@ function NavLink({
 
 function Brand({ collapsed }: { collapsed?: boolean }) {
   return (
-    <div className={cn("flex items-center gap-3 px-1", collapsed && "justify-center px-0")}>
-      <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 transition-transform duration-200 hover:scale-105">
+    <Link
+      to="/"
+      className={cn(
+        "group flex items-center gap-3 px-1 cursor-pointer transition-transform hover:opacity-90",
+        collapsed && "justify-center px-0",
+      )}
+    >
+      <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 transition-transform duration-200 group-hover:scale-105">
         <BookOpenText className="size-5" />
       </div>
       {!collapsed && (
         <div className="min-w-0 transition-all duration-300">
-          <p className="truncate text-sm font-bold leading-tight tracking-tight">Griya Huffazh</p>
+          <p className="truncate text-sm font-bold leading-tight tracking-tight group-hover:text-primary transition-colors">
+            Griya Huffazh
+          </p>
           <p className="truncate text-[11px] font-medium text-muted-foreground">Teacher Upgrading</p>
         </div>
       )}
-    </div>
+    </Link>
   );
 }
 
 function SidebarNav({
   collapsed = false,
+  role,
+  hasAnnouncementBadge,
   onToggleCollapse,
   onNavigate,
+  onLogoutClick,
 }: {
   collapsed?: boolean;
+  role?: any;
+  hasAnnouncementBadge?: boolean;
   onToggleCollapse?: () => void;
   onNavigate?: (() => void) | undefined;
+  onLogoutClick: () => void;
 }) {
+  const primary = getPrimaryNav(role);
+  const secondary = getSecondaryNav(role);
+
   return (
     <TooltipProvider delayDuration={100}>
       <div className={cn("flex h-full flex-col gap-5 p-3.5", collapsed && "items-center px-2")}>
@@ -109,8 +161,14 @@ function SidebarNav({
               Utama
             </p>
           )}
-          {primaryNav.map((item) => (
-            <NavLink key={item.to} item={item} collapsed={collapsed} onNavigate={onNavigate} />
+          {primary.map((item) => (
+            <NavLink
+              key={item.to}
+              item={item}
+              collapsed={collapsed}
+              hasBadge={item.badgeKey === "announcements" && hasAnnouncementBadge}
+              onNavigate={onNavigate}
+            />
           ))}
         </nav>
 
@@ -121,8 +179,13 @@ function SidebarNav({
               Akun
             </p>
           )}
-          {secondaryNav.map((item) => (
-            <NavLink key={item.to} item={item} collapsed={collapsed} onNavigate={onNavigate} />
+          {secondary.map((item) => (
+            <NavLink
+              key={item.to}
+              item={item}
+              collapsed={collapsed}
+              onNavigate={onNavigate}
+            />
           ))}
         </nav>
 
@@ -135,7 +198,7 @@ function SidebarNav({
                   type="button"
                   onClick={() => {
                     onNavigate?.();
-                    logout();
+                    onLogoutClick();
                   }}
                   className="flex size-11 items-center justify-center rounded-xl text-muted-foreground transition-all duration-200 hover:bg-destructive/10 hover:text-destructive"
                 >
@@ -151,7 +214,7 @@ function SidebarNav({
               type="button"
               onClick={() => {
                 onNavigate?.();
-                logout();
+                onLogoutClick();
               }}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-destructive/10 hover:text-destructive"
             >
@@ -173,14 +236,59 @@ export function AppShell({ children }: { children: ReactNode }) {
     return false;
   });
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+  const [logoutSuccessOpen, setLogoutSuccessOpen] = useState(false);
+  const [sessionExpiredOpen, setSessionExpiredOpen] = useState(false);
+
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const { user, role, ready } = useSession();
+  const { user, role, ready, isUpgrader } = useSession();
   useAutoSync();
 
+  const { rows: announcements } = useCollection(announcementRepo);
+  const hasAnnBadge = hasActiveDeadlineAnnouncements(announcements);
+
+  // Require Login Guard
   useEffect(() => {
     if (ready && !user) void navigate({ to: "/login" });
   }, [ready, user, navigate]);
+
+  // Role-Based Access Guard (Item 10)
+  useEffect(() => {
+    if (ready && user && !isUpgrader) {
+      if (pathname.startsWith("/teachers") || pathname.startsWith("/analytics")) {
+        toast.error("Akses terbatas. Menu ini khusus untuk Upgrader/Pengurus.");
+        void navigate({ to: "/" });
+      }
+    }
+  }, [ready, user, isUpgrader, pathname, navigate]);
+
+  // Item 7: 1-Hour Inactivity Auto-Logout Tracker
+  useEffect(() => {
+    if (!ready || !user) return;
+
+    const INACTIVITY_LIMIT_MS = 3600000; // 1 hour
+    let lastActivity = Date.now();
+
+    const updateActivity = () => {
+      lastActivity = Date.now();
+    };
+
+    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    events.forEach((ev) => window.addEventListener(ev, updateActivity, { passive: true }));
+
+    const interval = setInterval(() => {
+      if (Date.now() - lastActivity >= INACTIVITY_LIMIT_MS) {
+        logout();
+        setSessionExpiredOpen(true);
+      }
+    }, 30000); // Check every 30s
+
+    return () => {
+      events.forEach((ev) => window.removeEventListener(ev, updateActivity));
+      clearInterval(interval);
+    };
+  }, [ready, user]);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -189,6 +297,28 @@ export function AppShell({ children }: { children: ReactNode }) {
       return next;
     });
   };
+
+  // Item 12: Logout with loading animation and "Jazakumullahu Khairan" popup
+  const handleLogoutClick = () => {
+    setLogoutLoading(true);
+    setTimeout(() => {
+      logout();
+      setLogoutLoading(false);
+      setLogoutSuccessOpen(true);
+    }, 900);
+  };
+
+  const handleLogoutConfirmDone = () => {
+    setLogoutSuccessOpen(false);
+    void navigate({ to: "/login" });
+  };
+
+  const handleSessionExpiredDone = () => {
+    setSessionExpiredOpen(false);
+    void navigate({ to: "/login" });
+  };
+
+  const mobileNavItems = getMobileNav(role);
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
@@ -199,7 +329,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           collapsed ? "w-[72px]" : "w-64",
         )}
       >
-        <SidebarNav collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
+        <SidebarNav
+          collapsed={collapsed}
+          role={role}
+          hasAnnouncementBadge={hasAnnBadge}
+          onToggleCollapse={toggleCollapsed}
+          onLogoutClick={handleLogoutClick}
+        />
       </aside>
 
       {/* Mobile Drawer */}
@@ -220,7 +356,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               <X className="size-5" />
             </Button>
-            <SidebarNav onNavigate={() => setDrawerOpen(false)} />
+            <SidebarNav
+              role={role}
+              hasAnnouncementBadge={hasAnnBadge}
+              onNavigate={() => setDrawerOpen(false)}
+              onLogoutClick={handleLogoutClick}
+            />
           </div>
         </div>
       )}
@@ -254,11 +395,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             <PanelLeft className="size-5" />
           </Button>
 
-          <p className="truncate text-sm font-bold sm:text-base tracking-tight">
-            {[...primaryNav, ...secondaryNav].find((i) =>
+          {/* Item 6: Clickable Title to Dashboard */}
+          <Link
+            to="/"
+            className="truncate text-sm font-bold sm:text-base tracking-tight hover:text-primary transition-colors cursor-pointer"
+          >
+            {[...getPrimaryNav(role), ...getSecondaryNav(role)].find((i) =>
               i.to === "/" ? pathname === "/" : pathname.startsWith(i.to),
             )?.label ?? "Griya Huffazh Quran"}
-          </p>
+          </Link>
 
           <div className="ml-auto flex items-center gap-1.5">
             <SyncStatusBadge />
@@ -277,21 +422,30 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar */}
+      {/* Mobile Bottom Navigation Bar (Item 8: Simplified Navbar) */}
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur-md lg:hidden">
-        <ul className="grid grid-cols-5">
-          {mobileNav.map((item) => {
+        <ul className={cn("grid", mobileNavItems.length === 4 ? "grid-cols-4" : "grid-cols-5")}>
+          {mobileNavItems.map((item) => {
             const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+            const showBadge = item.badgeKey === "announcements" && hasAnnBadge;
             return (
               <li key={item.to}>
                 <Link
                   to={item.to}
                   className={cn(
-                    "flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition-colors",
+                    "relative flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition-colors",
                     active ? "text-primary font-semibold" : "text-muted-foreground",
                   )}
                 >
-                  <item.icon className={cn("size-5 transition-transform", active && "scale-110")} />
+                  <div className="relative flex items-center justify-center">
+                    <item.icon className={cn("size-5 transition-transform", active && "scale-110")} />
+                    {showBadge && (
+                      <span className="absolute -top-1 -right-1 flex size-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
+                        <span className="relative inline-flex size-2 rounded-full bg-destructive border border-background"></span>
+                      </span>
+                    )}
+                  </div>
                   <span>{item.label}</span>
                 </Link>
               </li>
@@ -299,6 +453,67 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </ul>
       </nav>
+
+      {/* Logout Loading Overlay */}
+      {logoutLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs text-white animate-fade-in">
+          <div className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-card text-card-foreground shadow-2xl border border-border">
+            <Loader2 className="size-8 animate-spin text-primary" />
+            <p className="text-sm font-semibold">Sedang keluar dari akun...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Item 12: Logout Success Modal ("Jazakumullahu Khairan") */}
+      <Dialog open={logoutSuccessOpen} onOpenChange={() => handleLogoutConfirmDone()}>
+        <DialogContent className="max-w-md text-center p-6 space-y-4">
+          <div className="mx-auto grid size-16 place-items-center rounded-full bg-primary/10 text-primary border border-primary/20">
+            <Heart className="size-8 text-primary animate-pulse" />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold tracking-tight text-foreground font-serif">
+              Jazakumullahu Khairan wa Barakallahu Fikum
+            </h3>
+            <p className="text-base font-semibold text-primary">
+              Semangat selalu!
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed pt-1">
+              Terima kasih atas dedikasi dan ikhtiar Anda dalam mendidik serta menyimak setoran Al-Qur'an.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <Button onClick={handleLogoutConfirmDone} className="w-full gap-2 shadow-md">
+              <span>Ke Halaman Login</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Item 7: Session Expired Modal (Inactivity Timeout) */}
+      <Dialog open={sessionExpiredOpen} onOpenChange={() => handleSessionExpiredDone()}>
+        <DialogContent className="max-w-md text-center p-6 space-y-4">
+          <div className="mx-auto grid size-16 place-items-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+            <AlertTriangle className="size-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold tracking-tight text-foreground">
+              Sesi Anda Telah Berakhir
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Demi keamanan akun, Anda telah otomatis keluar karena tidak ada aktivitas selama 1 jam. Silakan masuk kembali untuk melanjutkan.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <Button onClick={handleSessionExpiredDone} className="w-full gap-2 shadow-md">
+              <span>Masuk Kembali</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

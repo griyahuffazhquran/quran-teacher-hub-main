@@ -95,6 +95,13 @@ export function computeInstitutionalAnalytics(
 
     const monthReports = allReports.filter((r) => {
       if (r.isDeleted) return false;
+      if (!r.date) return false;
+      const parts = r.date.split("-");
+      if (parts.length >= 2) {
+        const rYear = parseInt(parts[0]!, 10);
+        const rMonth = parseInt(parts[1]!, 10) - 1;
+        return rYear === mYear && rMonth === mMonth;
+      }
       const rd = new Date(r.date);
       return rd.getFullYear() === mYear && rd.getMonth() === mMonth;
     });

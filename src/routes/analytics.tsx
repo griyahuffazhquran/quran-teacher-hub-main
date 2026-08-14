@@ -55,6 +55,7 @@ import {
   generateExecutiveSummaryMarkdown,
 } from "@/lib/services/analytics-service";
 import { initials } from "@/lib/services/teacher-service";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/analytics")({
   head: () => ({
@@ -211,21 +212,28 @@ function AnalyticsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
-                <div className="h-56 flex items-end justify-between gap-3 pt-6 px-2 border-b border-border">
+                <div className="h-60 flex items-end justify-between gap-3 pt-8 pb-2 px-2 border-b border-border">
                   {analytics.trendData.map((item) => {
                     const maxVal = Math.max(...analytics.trendData.map((d) => d.count), 1);
-                    const heightPct = Math.max(12, Math.round((item.count / maxVal) * 100));
+                    const heightPct = item.count === 0 ? 6 : Math.max(12, Math.round((item.count / maxVal) * 100));
 
                     return (
-                      <div key={item.month} className="flex-1 flex flex-col items-center gap-2 group">
-                        <span className="text-[10px] font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                          {item.count} setoran
+                      <div key={item.month} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
+                        <span className="text-[11px] font-bold text-primary transition-all group-hover:scale-110">
+                          {item.count}
                         </span>
-                        <div
-                          style={{ height: `${heightPct}%` }}
-                          className="w-full max-w-[42px] rounded-t-lg bg-primary/80 group-hover:bg-primary transition-all shadow-xs"
-                        />
-                        <span className="text-[11px] font-medium text-muted-foreground mt-1">
+                        <div className="w-full max-w-[44px] bg-muted/40 rounded-t-xl h-full flex flex-col justify-end p-0.5">
+                          <div
+                            style={{ height: `${heightPct}%` }}
+                            className={cn(
+                              "w-full rounded-t-lg transition-all duration-500 shadow-sm",
+                              item.count > 0
+                                ? "bg-gradient-to-t from-primary/80 to-primary group-hover:from-primary group-hover:to-primary/90"
+                                : "bg-muted-foreground/20",
+                            )}
+                          />
+                        </div>
+                        <span className="text-[11px] font-semibold text-muted-foreground mt-1 text-center truncate max-w-full">
                           {item.month}
                         </span>
                       </div>
@@ -233,7 +241,7 @@ function AnalyticsPage() {
                   })}
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-                  <span>* Menampilkan frekuensi total setoran per bulan</span>
+                  <span>* Total frekuensi setoran terverifikasi per bulan</span>
                   <span className="font-semibold text-foreground">
                     Rata-rata: {Math.round(analytics.totalReports / 6)} setoran/bulan
                   </span>

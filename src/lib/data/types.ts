@@ -152,6 +152,7 @@ export type Announcement = {
   authorName: string;
   pinned: boolean;
   audience: AnnouncementAudience;
+  dueDate?: string;
   createdAt: string;
   updatedAt: string;
 };

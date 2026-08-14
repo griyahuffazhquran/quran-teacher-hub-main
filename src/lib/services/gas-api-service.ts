@@ -1,5 +1,6 @@
 import { getGasApiUrl, isGasApiConfigured } from "@/lib/config/api-config";
 import { allRepos, hydrateAll } from "@/lib/data/repositories";
+import { parseGrade } from "@/lib/data/selectors";
 import type { Teacher } from "@/lib/data/types";
 import { setSession } from "./session-service";
 
@@ -131,7 +132,7 @@ function normalizeRow(repoName: string, row: any): any {
         material: String(row.Materi || row.material || "tahfizh"),
         materialDetail: String(row["Rincian Materi"] || row.materialDetail || ""),
         reference: String(row["Referensi Ayat/Halaman"] || row.reference || ""),
-        grade: Number(row["Nilai Grade"] || row.grade || 0),
+        grade: parseGrade(row["Nilai Grade"] || row.grade),
         homework: String(row["PR/Tugas"] || row.homework || ""),
         homeworkDone: String(row["Status PR"] || row.homeworkDone).includes("Selesai") || Boolean(row.homeworkDone),
         mustamiNote: String(row["Catatan Mustami"] || row.mustamiNote || ""),
@@ -410,8 +411,8 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         materialDetail: item.materialDetail || "",
         "Referensi Ayat/Halaman": item.reference || "",
         reference: item.reference || "",
-        "Nilai Grade": item.grade || 0,
-        grade: item.grade || 0,
+        "Nilai Grade": parseGrade(item.grade),
+        grade: parseGrade(item.grade),
         "PR/Tugas": item.homework || "",
         homework: item.homework || "",
         "Status PR": item.homework ? (item.homeworkDone ? "PR Selesai" : "PR Belum Selesai") : "Tidak Ada PR",

@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowUpDown, Filter, LayoutGrid, Plus, Table as TableIcon } from "lucide-react";
+import { ArrowUpDown, Download, Filter, LayoutGrid, Plus, Table as TableIcon } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { exportReportsCSV } from "@/lib/services/reporting-export-service";
 import { ReportCard } from "@/components/reports/ReportCard";
 import { ReportDetailDrawer } from "@/components/reports/ReportDetailDrawer";
 import { ReportFormDialog } from "@/components/reports/ReportFormDialog";
@@ -217,11 +218,24 @@ function Page() {
       <PageHeader
         title="Setoran"
         description="Catat setoran guru lain sebagai Mustami' dan pantau progres upgrading Anda."
-        actions={
+        action={
           user ? (
-            <Button onClick={openCreate} className="shadow-sm">
-              <Plus className="mr-1 size-4" /> Setoran Baru
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  exportReportsCSV(reportRows, teacherRows);
+                  toast.success("Laporan setoran berhasil diunduh (CSV).");
+                }}
+                className="gap-1.5 shadow-xs text-xs h-9"
+              >
+                <Download className="size-3.5" />
+                <span>Ekspor CSV</span>
+              </Button>
+              <Button onClick={openCreate} className="shadow-xs gap-1.5 text-xs h-9">
+                <Plus className="size-4" /> Setoran Baru
+              </Button>
+            </div>
           ) : null
         }
       />

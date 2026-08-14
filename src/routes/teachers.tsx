@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Search } from "lucide-react";
+import { Download, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { exportTeachersCSV } from "@/lib/services/reporting-export-service";
 import { TeacherDetailSheet } from "@/components/teachers/TeacherDetailSheet";
 import { TeacherFormDialog } from "@/components/teachers/TeacherFormDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -110,10 +111,23 @@ function Page() {
       <PageHeader
         title="Data Guru"
         description="Master data guru, ustadz, dan ustadzah."
-        actions={
-          <Button onClick={openCreate}>
-            <Plus className="size-4" /> Tambah Guru
-          </Button>
+        action={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                exportTeachersCSV(teachers);
+                toast.success("Master data guru berhasil diunduh (CSV).");
+              }}
+              className="gap-1.5 shadow-xs text-xs h-9"
+            >
+              <Download className="size-3.5" />
+              <span>Ekspor CSV</span>
+            </Button>
+            <Button onClick={openCreate} className="gap-1.5 shadow-xs text-xs h-9">
+              <Plus className="size-4" /> Tambah Guru
+            </Button>
+          </div>
         }
       />
 

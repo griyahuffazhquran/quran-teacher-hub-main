@@ -5,6 +5,7 @@ import {
   BellPlus,
   Calendar as CalendarIcon,
   CheckCircle2,
+  Download,
   Filter,
   Plus,
   Search,
@@ -13,6 +14,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import { exportTargetsCSV } from "@/lib/services/reporting-export-service";
 import { UpgradeCalendar } from "@/components/calendar/UpgradeCalendar";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -165,11 +167,24 @@ function Page() {
       <PageHeader
         title="Target & Reminders Upgrading"
         description="Kelola target hafalan guru, jadwalkan pengingat, dan pantau kalender upgrading."
-        actions={
+        action={
           user ? (
-            <Button onClick={handleOpenCreate} className="shadow-sm font-medium">
-              <Plus className="mr-1.5 size-4" /> Target Baru
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  exportTargetsCSV(targetRows, teacherRows);
+                  toast.success("Laporan target berhasil diunduh (CSV).");
+                }}
+                className="gap-1.5 shadow-xs text-xs h-9"
+              >
+                <Download className="size-3.5" />
+                <span>Ekspor CSV</span>
+              </Button>
+              <Button onClick={handleOpenCreate} className="shadow-xs gap-1.5 text-xs h-9">
+                <Plus className="size-4" /> Target Baru
+              </Button>
+            </div>
           ) : null
         }
       />

@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { BookOpenText, Loader2, Sparkles } from "lucide-react";
-import { toast } from "sonner";
+import { BookOpenText, CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useSession } from "@/hooks/use-session";
-import { DEMO_PASSWORD, demoAccounts, login, loginAsync } from "@/lib/services/auth-service";
+import { loginAsync } from "@/lib/services/auth-service";
+import type { Teacher } from "@/lib/data/types";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -16,11 +20,6 @@ export const Route = createFileRoute("/login")({
       { title: "Masuk | Griya Huffazh Quran Upgrading" },
       {
         name: "description",
-        content: "Masuk ke sistem manajemen upgrading guru Griya Huffazh Quran.",
-      },
-      { property: "og:title", content: "Masuk | Griya Huffazh Quran Upgrading" },
-      {
-        property: "og:description",
         content: "Masuk ke sistem manajemen upgrading guru Griya Huffazh Quran.",
       },
     ],
@@ -33,12 +32,14 @@ function LoginPage() {
   const { user, ready } = useSession();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [welcomeUser, setWelcomeUser] = useState<Teacher | null>(null);
 
   useEffect(() => {
-    if (ready && user) void navigate({ to: "/" });
-  }, [ready, user, navigate]);
+    if (ready && user && !welcomeUser) void navigate({ to: "/" });
+  }, [ready, user, navigate, welcomeUser]);
 
   const handleLogin = async (u: string, p: string) => {
     setError(null);
@@ -46,14 +47,18 @@ function LoginPage() {
 
     try {
       const result = await loginAsync(u, p);
-      if (!result.ok) {
-        setError(result.error);
+      if (!result.ok || !result.user) {
+        setError(result.error || "Gagal masuk.");
         setLoading(false);
         return;
       }
-      toast.success(`Selamat datang, ${result.user.name}`);
       setLoading(false);
-      void navigate({ to: "/" });
+      setWelcomeUser(result.user);
+
+      // Auto navigate after 2.5 seconds
+      setTimeout(() => {
+        void navigate({ to: "/" });
+      }, 2500);
     } catch (err) {
       console.error("Login failed:", err);
       setError("Terjadi kesalahan saat masuk. Silakan coba lagi.");
@@ -70,10 +75,8 @@ function LoginPage() {
     handleLogin(username, password);
   };
 
-  const handleQuickDemo = (demoUsername: string) => {
-    setUsername(demoUsername);
-    setPassword(DEMO_PASSWORD);
-    handleLogin(demoUsername, DEMO_PASSWORD);
+  const goToDashboard = () => {
+    void navigate({ to: "/" });
   };
 
   return (
@@ -99,83 +102,102 @@ function LoginPage() {
             <BookOpenText className="size-6" />
           </div>
           <CardTitle className="mt-4 text-xl font-bold tracking-tight">Griya Huffazh Quran</CardTitle>
-          <CardDescription className="text-xs">Teacher Upgrading Management System</CardDescription>
+          <CardDescription className="text-xs">
+            Sistem Upgrading & Evaluasi Setoran Guru
+          </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-5 pb-8">
-          <form className="space-y-4" onSubmit={submit}>
-            <div className="space-y-2">
-              <Label htmlFor="username" className="text-xs font-medium">
+          <form onSubmit={submit} className="space-y-4">
+            {error && (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-center text-xs font-medium text-destructive animate-fade-in">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="username" className="text-xs font-semibold">
                 Username
               </Label>
               <Input
                 id="username"
+                type="text"
                 placeholder="Masukkan username"
-                autoComplete="username"
-                disabled={loading}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="transition-all focus-visible:ring-primary"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                autoComplete="current-password"
                 disabled={loading}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="transition-all focus-visible:ring-primary"
+                autoComplete="username"
               />
             </div>
 
-            {error && (
-              <p className="text-xs font-medium text-destructive bg-destructive/10 p-2.5 rounded-lg border border-destructive/20 animate-fade-in">
-                {error}
-              </p>
-            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs font-semibold">
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  autoComplete="current-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+            </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full font-semibold shadow-md shadow-primary/20 transition-all duration-200 active:scale-[0.98]"
-            >
+            <Button type="submit" className="w-full h-10 font-semibold shadow-md gap-2" disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  <span>Memproses...</span>
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>Memverifikasi...</span>
                 </>
               ) : (
-                <span>Masuk</span>
+                <span>Masuk Aplikasi</span>
               )}
             </Button>
           </form>
-
-          <div className="rounded-xl border border-border/60 bg-muted/40 p-3.5 text-xs text-muted-foreground space-y-2">
-            <div className="flex items-center gap-1.5 font-medium text-foreground">
-              <Sparkles className="size-3.5 text-amber-500" />
-              <span>Akun Demo (Klik untuk langsung masuk)</span>
-            </div>
-            <div className="space-y-1 pt-1">
-              {demoAccounts.map((a) => (
-                <button
-                  key={a.username}
-                  type="button"
-                  disabled={loading}
-                  className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs font-medium transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
-                  onClick={() => handleQuickDemo(a.username)}
-                >
-                  <span className="font-semibold text-foreground">{a.username}</span>
-                  <span className="text-[11px] text-muted-foreground">{a.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </CardContent>
       </Card>
+
+      {/* Islamic Welcome Success Popup Dialog */}
+      <Dialog open={!!welcomeUser} onOpenChange={() => goToDashboard()}>
+        <DialogContent className="max-w-md text-center p-6 space-y-4">
+          <div className="mx-auto grid size-16 place-items-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 animate-bounce">
+            <CheckCircle2 className="size-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-2xl font-bold tracking-tight text-foreground font-serif">
+              Assalamu'alaikum
+            </h3>
+            <p className="text-lg font-bold text-primary">
+              Ahlan wa Sahlan, {welcomeUser?.name}
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed pt-1">
+              Berhasil masuk ke Sistem Upgrading & Evaluasi Tahfizh Griya Huffazh Quran.
+              Semoga Allah memberikan keberkahan dan kemudahan dalam setiap aktivitas hari ini.
+            </p>
+          </div>
+
+          <div className="pt-3">
+            <Button onClick={goToDashboard} className="w-full gap-2 shadow-md">
+              <span>Lanjut ke Dashboard</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

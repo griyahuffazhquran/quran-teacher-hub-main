@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from "@/hooks/use-session";
-import { formatDate, materialLabel, statusLabel, teacherName } from "@/lib/data/selectors";
+import { formatDate, materialLabel, parseGrade, statusLabel, teacherName } from "@/lib/data/selectors";
 import type { Report, Teacher } from "@/lib/data/types";
 import { CommentThread } from "./CommentThread";
 import { FeedbackSection } from "./FeedbackSection";
@@ -103,8 +103,8 @@ export function ReportDetailDrawer({
               <Badge variant="secondary" className="font-semibold">
                 {materialLabel[report.material]}
               </Badge>
-              <Badge variant={gradeTone[report.grade]} className="font-bold text-sm px-2.5">
-                Nilai {report.grade}
+              <Badge variant={gradeTone[parseGrade(report.grade)] ?? "secondary"} className="font-bold text-sm px-2.5">
+                Nilai {parseGrade(report.grade)}
               </Badge>
               <Badge variant={statusTone[report.status]} className="text-xs">
                 {statusLabel[report.status]}
