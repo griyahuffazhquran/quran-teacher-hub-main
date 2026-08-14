@@ -12,6 +12,7 @@ export function notify(input: {
   feedbackId?: string | undefined;
   commentId?: string | undefined;
   reminderId?: string | undefined;
+  achievementId?: string | undefined;
 }): NotificationItem {
   return notificationRepo.create({
     title: input.title,
@@ -25,6 +26,7 @@ export function notify(input: {
     ...(input.feedbackId ? { feedbackId: input.feedbackId } : {}),
     ...(input.commentId ? { commentId: input.commentId } : {}),
     ...(input.reminderId ? { reminderId: input.reminderId } : {}),
+    ...(input.achievementId ? { achievementId: input.achievementId } : {}),
   });
 }
 

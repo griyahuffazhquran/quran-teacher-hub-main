@@ -118,6 +118,30 @@ export type ReportComment = {
   updatedAt: string;
 };
 
+export type AchievementCategory = "setoran" | "target" | "mustami" | "tahsin" | "level";
+
+export type Achievement = {
+  id: ID;
+  teacherId: ID;
+  code: string;
+  title: string;
+  description: string;
+  category: AchievementCategory;
+  icon: string;
+  points: number;
+  unlockedAt: string; // ISO date
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TeacherRank = {
+  level: number;
+  title: string;
+  minXp: number;
+  badge: string;
+  color: string;
+};
+
 export type NotificationType =
   | "REPORT_CREATED"
   | "REPORT_UPDATED"
@@ -130,6 +154,7 @@ export type NotificationType =
   | "REMINDER_TRIGGERED"
   | "HOMEWORK_PENDING"
   | "ACHIEVEMENT_UNLOCKED"
+  | "LEVEL_UP"
   | "ANNOUNCEMENT_CREATED"
   | "SYSTEM";
 
@@ -147,6 +172,7 @@ export type NotificationItem = {
   feedbackId?: ID;
   commentId?: ID;
   reminderId?: ID;
+  achievementId?: ID;
   createdAt: string;
   updatedAt: string;
 };
@@ -171,7 +197,8 @@ export type Entity =
   | Feedback
   | ReportComment
   | NotificationItem
-  | ActivityLog;
+  | ActivityLog
+  | Achievement;
 
 export type NewEntity<T extends { id: ID; createdAt: string; updatedAt: string }> = Omit<
   T,

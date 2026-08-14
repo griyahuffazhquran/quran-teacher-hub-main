@@ -1,5 +1,6 @@
 import { nowISO } from "./storage";
 import type {
+  Achievement,
   ActivityLog,
   Feedback,
   NotificationItem,
@@ -301,6 +302,71 @@ export function seedReminders(): Reminder[] {
       frequency: "once",
       remindAt: daysAhead(1),
       dismissed: false,
+      ...stamp(),
+    },
+  ];
+}
+
+export function seedAchievements(): Achievement[] {
+  return [
+    {
+      id: "ach_1",
+      teacherId: "tea_ahmad",
+      code: "GRADE_A_STREAK",
+      title: "Hafiz Mumtaz",
+      description: "Mencapai nilai A secara berturut-turut pada setoran hafalan.",
+      category: "setoran",
+      icon: "Award",
+      points: 150,
+      unlockedAt: daysAgo(5),
+      ...stamp(),
+    },
+    {
+      id: "ach_2",
+      teacherId: "tea_ahmad",
+      code: "FIRST_TARGET",
+      title: "Pionir Target",
+      description: "Menyelesaikan target upgrading pertama dengan hasil memuaskan.",
+      category: "target",
+      icon: "Target",
+      points: 200,
+      unlockedAt: daysAgo(10),
+      ...stamp(),
+    },
+    {
+      id: "ach_3",
+      teacherId: "tea_abdullah",
+      code: "TARGET_MASTER",
+      title: "Master Upgrading",
+      description: "Menyelesaikan target setoran sekali duduk Juz 15.",
+      category: "target",
+      icon: "Trophy",
+      points: 300,
+      unlockedAt: daysAgo(2),
+      ...stamp(),
+    },
+    {
+      id: "ach_4",
+      teacherId: "tea_hanifah",
+      code: "MUSTAMI_ACTIVE",
+      title: "Mustami' Teladan",
+      description: "Aktif menyimak dan memberikan umpan balik berkualitas untuk sesama guru.",
+      category: "mustami",
+      icon: "CheckCheck",
+      points: 180,
+      unlockedAt: daysAgo(12),
+      ...stamp(),
+    },
+    {
+      id: "ach_5",
+      teacherId: "tea_maryam",
+      code: "UPGRADER_LEADER",
+      title: "Koordinator Utama",
+      description: "Membimbing dan mengevaluasi lebih dari 10 sesi upgrading lembaga.",
+      category: "level",
+      icon: "Crown",
+      points: 500,
+      unlockedAt: daysAgo(30),
       ...stamp(),
     },
   ];

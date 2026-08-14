@@ -89,6 +89,10 @@ export function updateTeacher(id: string, input: TeacherInput): Teacher | undefi
   return teacherRepo.update(id, toRow(input));
 }
 
+export function patchTeacher(id: string, patch: Partial<Teacher>): Teacher | undefined {
+  return teacherRepo.update(id, patch);
+}
+
 export function setTeacherStatus(id: string, status: TeacherStatus): Teacher | undefined {
   return teacherRepo.update(id, { status });
 }

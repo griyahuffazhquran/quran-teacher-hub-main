@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useCollection } from "@/hooks/use-repository";
+import { achievementRepo, targetRepo } from "@/lib/data/repositories";
 import { formatDate } from "@/lib/data/selectors";
 import type { Report, Teacher } from "@/lib/data/types";
+import { calculateTeacherXpAndRank } from "@/lib/services/achievement-service";
 import { initials, normalizeTeacher } from "@/lib/services/teacher-service";
 
 export function TeacherDetailSheet({
@@ -24,8 +28,16 @@ export function TeacherDetailSheet({
   onOpenChange: (v: boolean) => void;
   onEdit: (t: Teacher) => void;
 }) {
+  const { rows: targets } = useCollection(targetRepo);
+  const { rows: achievements } = useCollection(achievementRepo);
+
   const t = teacher ? normalizeTeacher(teacher) : null;
-  const own = t ? reports.filter((r) => r.teacherId === t.id) : [];
+  const own = t ? reports.filter((r) => r.teacherId === t.id && !r.isDeleted) : [];
+
+  const gamification = useMemo(() => {
+    if (!t) return null;
+    return calculateTeacherXpAndRank(t.id, reports, targets, achievements);
+  }, [t, reports, targets, achievements]);
 
   return (
     <Sheet open={!!teacher} onOpenChange={onOpenChange}>
@@ -45,6 +57,12 @@ export function TeacherDetailSheet({
                 <div>
                   <p className="text-base font-semibold">{t.name}</p>
                   <p className="text-sm text-muted-foreground">@{t.username}</p>
+                  {gamification?.currentRank && (
+                    <Badge variant="outline" className="text-[10px] mt-1 gap-1">
+                      <span>{gamification.currentRank.badge}</span>
+                      <span>{gamification.currentRank.title}</span>
+                    </Badge>
+                  )}
                 </div>
               </div>
               <Separator />
@@ -52,7 +70,7 @@ export function TeacherDetailSheet({
                 <Row label="Role" value={t.role === "upgrader" ? "Upgrader" : "Teacher"} />
                 <Row label="Jabatan" value={t.position} />
                 <Row label="Spesialisasi" value={t.specialization} />
-                <Row label="Level" value={t.level} />
+                <Row label="Level Target" value={t.level} />
                 <Row label="Bergabung" value={formatDate(t.joinedAt)} />
                 <Row label="No. HP" value={t.phone ?? "—"} />
                 <div>
@@ -64,6 +82,9 @@ export function TeacherDetailSheet({
                   </dd>
                 </div>
                 <Row label="Total Setoran" value={String(own.length)} />
+                {gamification && (
+                  <Row label="Total XP Gamifikasi" value={`${gamification.totalXp} XP`} />
+                )}
               </dl>
               <Button className="w-full" onClick={() => onEdit(teacher!)}>
                 Edit Data

@@ -1,6 +1,7 @@
 import { migrateReports } from "./migrations";
 import { createRepository } from "./repository";
 import {
+  seedAchievements,
   seedActivityLogs,
   seedComments,
   seedFeedbacks,
@@ -12,6 +13,7 @@ import {
 } from "./seed";
 import { resetAllData } from "./storage";
 import type {
+  Achievement,
   ActivityLog,
   Feedback,
   NotificationItem,
@@ -26,6 +28,7 @@ export const teacherRepo = createRepository<Teacher>("teachers", seedTeachers);
 export const reportRepo = createRepository<Report>("reports", seedReports, migrateReports);
 export const targetRepo = createRepository<Target>("targets", seedTargets);
 export const reminderRepo = createRepository<Reminder>("reminders", seedReminders);
+export const achievementRepo = createRepository<Achievement>("achievements", seedAchievements);
 export const feedbackRepo = createRepository<Feedback>("feedbacks", seedFeedbacks);
 export const commentRepo = createRepository<ReportComment>("comments", seedComments);
 export const notificationRepo = createRepository<NotificationItem>(
@@ -39,6 +42,7 @@ export const allRepos = [
   reportRepo,
   targetRepo,
   reminderRepo,
+  achievementRepo,
   feedbackRepo,
   commentRepo,
   notificationRepo,
@@ -53,6 +57,7 @@ export function hydrateAll() {
     reportRepo.replaceAll(seedReports());
     targetRepo.replaceAll(seedTargets());
     reminderRepo.replaceAll(seedReminders());
+    achievementRepo.replaceAll(seedAchievements());
     feedbackRepo.replaceAll(seedFeedbacks());
     commentRepo.replaceAll(seedComments());
     notificationRepo.replaceAll(seedNotifications());
@@ -66,6 +71,7 @@ export function resetDemoData() {
   reportRepo.replaceAll(seedReports());
   targetRepo.replaceAll(seedTargets());
   reminderRepo.replaceAll(seedReminders());
+  achievementRepo.replaceAll(seedAchievements());
   feedbackRepo.replaceAll(seedFeedbacks());
   commentRepo.replaceAll(seedComments());
   notificationRepo.replaceAll(seedNotifications());
