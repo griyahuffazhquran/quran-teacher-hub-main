@@ -1,5 +1,6 @@
 import { createId, ensureSchemaVersion, nowISO, readCollection, writeCollection } from "./storage";
 import type { ID } from "./types";
+import { pushMutationToGas } from "@/lib/services/gas-api-service";
 
 type Base = { id: ID; createdAt: string; updatedAt: string };
 
@@ -75,6 +76,7 @@ export function createRepository<T extends Base>(
       } as T;
       rows = [row, ...rows];
       persist();
+      void pushMutationToGas(name, "create", row);
       return row;
     },
     update: (id, patch) => {
@@ -87,7 +89,10 @@ export function createRepository<T extends Base>(
         updated = { ...r, ...patch, updatedAt: nowISO() } as T;
         return updated;
       });
-      if (updated) persist();
+      if (updated) {
+        persist();
+        void pushMutationToGas(name, "update", updated);
+      }
       return updated;
     },
     remove: (id) => {
