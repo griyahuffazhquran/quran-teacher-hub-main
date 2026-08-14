@@ -19,6 +19,8 @@ export type Repository<T extends Base> = {
 export function createRepository<T extends Base>(
   name: string,
   seed: () => T[] = () => [],
+  /** Optional upgrade step for rows persisted with an older schema. */
+  migrate: (rows: unknown[]) => T[] = (rows) => rows as T[],
 ): Repository<T> {
   let rows: T[] = [];
   let hydrated = false;
@@ -34,9 +36,10 @@ export function createRepository<T extends Base>(
   const hydrate = () => {
     if (hydrated || typeof window === "undefined") return;
     ensureSchemaVersion();
-    const stored = readCollection<T>(name);
+    const stored = readCollection<unknown>(name);
     if (stored) {
-      rows = stored;
+      rows = migrate(stored);
+      writeCollection(name, rows);
     } else {
       rows = seed();
       writeCollection(name, rows);

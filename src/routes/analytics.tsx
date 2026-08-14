@@ -18,7 +18,10 @@ function Page() {
   return (
     <AppShell>
       <PageHeader title="Analitik" description="Statistik lembaga berdasarkan data nyata." />
-      <PlaceholderPanel title="Analitik" note="Grafik akan menampilkan data nyata setelah laporan tersedia." />
+      <PlaceholderPanel
+        title="Analitik"
+        note="Grafik akan menampilkan data nyata setelah laporan tersedia."
+      />
     </AppShell>
   );
 }

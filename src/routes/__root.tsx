@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "../lib/theme";
+import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -79,10 +80,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Griya Huffazh Quran — Teacher Upgrading Management" },
-      { name: "description", content: "Sistem manajemen upgrading guru Griya Huffazh Quran: setoran, penilaian, target, dan analitik." },
+      {
+        name: "description",
+        content:
+          "Sistem manajemen upgrading guru Griya Huffazh Quran: setoran, penilaian, target, dan analitik.",
+      },
       { name: "author", content: "Griya Huffazh Quran" },
       { property: "og:title", content: "Griya Huffazh Quran — Teacher Upgrading Management" },
-      { property: "og:description", content: "Sistem manajemen upgrading guru Griya Huffazh Quran." },
+      {
+        property: "og:description",
+        content: "Sistem manajemen upgrading guru Griya Huffazh Quran.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
@@ -129,6 +137,7 @@ function RootComponent() {
       <ThemeProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
+        <Toaster />
       </ThemeProvider>
     </QueryClientProvider>
   );

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCollection } from "@/hooks/use-repository";
+import { useSession } from "@/hooks/use-session";
+import { notificationsFor } from "@/lib/services/notification-service";
 import { notificationRepo } from "@/lib/data/repositories";
 import { unreadCount } from "@/lib/data/selectors";
 
@@ -22,7 +24,9 @@ export const Route = createFileRoute("/notifications")({
 });
 
 function Page() {
-  const { rows, ready, repo } = useCollection(notificationRepo);
+  const { rows: allRows, ready, repo } = useCollection(notificationRepo);
+  const { user } = useSession();
+  const rows = notificationsFor(allRows, user?.id);
 
   return (
     <AppShell>
@@ -64,7 +68,11 @@ function Page() {
                   <p className="mt-1 text-sm text-muted-foreground">{n.body}</p>
                 </div>
                 {!n.read ? (
-                  <Button size="sm" variant="ghost" onClick={() => repo.update(n.id, { read: true })}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => repo.update(n.id, { read: true })}
+                  >
                     Tandai
                   </Button>
                 ) : (

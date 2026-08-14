@@ -18,7 +18,10 @@ function Page() {
   return (
     <AppShell>
       <PageHeader title="Profil" description="Informasi akun dan aktivitas Anda." />
-      <PlaceholderPanel title="Profil" note="Data profil akan terhubung setelah autentikasi dibangun." />
+      <PlaceholderPanel
+        title="Profil"
+        note="Data profil akan terhubung setelah autentikasi dibangun."
+      />
     </AppShell>
   );
 }

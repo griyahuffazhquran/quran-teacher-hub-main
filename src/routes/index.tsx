@@ -1,20 +1,25 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCollection } from "@/hooks/use-repository";
+import { useSession } from "@/hooks/use-session";
 import { reportRepo, teacherRepo } from "@/lib/data/repositories";
 import {
-  averageScore,
+  activeReports,
+  averageGrade,
   formatDate,
   isThisMonth,
+  materialLabel,
   pendingHomework,
-  reportTypeLabel,
   sortByDateDesc,
   teacherName,
 } from "@/lib/data/selectors";
+import { assessmentsOf, progressOf } from "@/lib/services/report-service";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -36,26 +41,47 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const { rows: reports, ready } = useCollection(reportRepo);
+  const { rows: reportRows, ready } = useCollection(reportRepo);
   const { rows: teachers } = useCollection(teacherRepo);
+  const { user, isUpgrader } = useSession();
 
-  const avg = averageScore(reports);
+  const reports = useMemo(() => activeReports(reportRows), [reportRows]);
+  const scope = useMemo(() => {
+    if (!user) return reports;
+    return isUpgrader ? reports : progressOf(reports, user.id);
+  }, [reports, user, isUpgrader]);
+
+  const asMustami = user ? assessmentsOf(reports, user.id) : [];
+  const grade = averageGrade(scope);
+  const last = sortByDateDesc(scope)[0];
+
   const stats = [
-    { label: "Total Setoran", value: String(reports.length) },
-    { label: "Setoran Bulan Ini", value: String(reports.filter((r) => isThisMonth(r.date)).length) },
-    { label: "Rata-rata Nilai", value: avg === null ? "—" : String(avg) },
-    { label: "PR Aktif", value: String(pendingHomework(reports).length) },
+    { label: isUpgrader ? "Total Setoran" : "Total Setoran Saya", value: String(scope.length) },
+    { label: "Setoran Bulan Ini", value: String(scope.filter((r) => isThisMonth(r.date)).length) },
+    { label: "Rata-rata Nilai", value: grade ?? "—" },
+    { label: "PR Aktif", value: String(pendingHomework(scope).length) },
+    { label: "Aktivitas Menyimak", value: String(asMustami.length) },
+    { label: "Setoran Terakhir", value: last ? formatDate(last.date) : "—" },
   ];
 
-  const recent = sortByDateDesc(reports).slice(0, 5);
+  const recent = sortByDateDesc(scope).slice(0, 5);
 
   return (
     <AppShell>
       <PageHeader
         title="Dashboard"
-        description="Ringkasan aktivitas upgrading berdasarkan data tersimpan di perangkat ini."
+        description={
+          user
+            ? `Assalamu'alaikum, ${user.name}. Berikut ringkasan upgrading Anda.`
+            : "Ringkasan aktivitas upgrading."
+        }
+        actions={
+          <Button asChild>
+            <Link to="/reports">Buka Setoran</Link>
+          </Button>
+        }
       />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         {stats.map((stat) => (
           <Card key={stat.label}>
             <CardHeader className="pb-2">
@@ -89,14 +115,16 @@ function Dashboard() {
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border p-3"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{teacherName(teachers, r.teacherId)}</p>
+                  <p className="truncate text-sm font-medium">
+                    {teacherName(teachers, r.teacherId)}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {r.surah} {r.fromAyah}–{r.toAyah} • {formatDate(r.date)}
+                    {r.materialDetail} • {r.reference} • {formatDate(r.date)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{reportTypeLabel[r.type]}</Badge>
-                  <span className="text-sm font-semibold">{r.score}</span>
+                  <Badge variant="secondary">{materialLabel[r.material]}</Badge>
+                  <span className="text-sm font-semibold">{r.grade}</span>
                 </div>
               </div>
             ))}
