@@ -1,6 +1,6 @@
 /**
- * SSR-safe LocalStorage adapter with namespacing + schema versioning.
- * All persistence in the app goes through this module.
+ * SSR-safe & iframe-sandbox resilient LocalStorage adapter with namespacing.
+ * Works seamlessly in local environment as well as sandboxed previews (e.g. Lovable editor).
  */
 export const STORAGE_PREFIX = "ghq";
 export const SCHEMA_VERSION = 1;
@@ -11,12 +11,22 @@ export function storageKey(collection: string) {
   return `${STORAGE_PREFIX}:${collection}`;
 }
 
+let storageAvailable: boolean | null = null;
+
 function hasStorage(): boolean {
+  if (typeof window === "undefined") return false;
+  if (storageAvailable !== null) return storageAvailable;
+
   try {
-    return typeof window !== "undefined" && !!window.localStorage;
+    const testKey = `${STORAGE_PREFIX}:_test_key_`;
+    window.localStorage.setItem(testKey, "1");
+    window.localStorage.removeItem(testKey);
+    storageAvailable = true;
   } catch {
-    return false;
+    storageAvailable = false;
   }
+
+  return storageAvailable;
 }
 
 export function readCollection<T>(collection: string): T[] | null {
@@ -36,7 +46,7 @@ export function writeCollection<T>(collection: string, rows: T[]): void {
   try {
     window.localStorage.setItem(storageKey(collection), JSON.stringify(rows));
   } catch {
-    // storage full / blocked — keep in-memory state working
+    // storage full or iframe restricted — keep working in memory
   }
 }
 

@@ -37,7 +37,7 @@ export function createRepository<T extends Base>(
     if (hydrated || typeof window === "undefined") return;
     ensureSchemaVersion();
     const stored = readCollection<unknown>(name);
-    if (stored) {
+    if (stored && stored.length > 0) {
       rows = migrate(stored);
       writeCollection(name, rows);
     } else {
@@ -51,9 +51,22 @@ export function createRepository<T extends Base>(
   return {
     name,
     hydrate,
-    list: () => rows,
-    get: (id) => rows.find((r) => r.id === id),
+    list: () => {
+      if (!hydrated && typeof window !== "undefined") {
+        hydrate();
+      }
+      return rows;
+    },
+    get: (id) => {
+      if (!hydrated && typeof window !== "undefined") {
+        hydrate();
+      }
+      return rows.find((r) => r.id === id);
+    },
     create: (input) => {
+      if (!hydrated && typeof window !== "undefined") {
+        hydrate();
+      }
       const row = {
         ...(input as object),
         id: createId(name.slice(0, 3)),
@@ -65,6 +78,9 @@ export function createRepository<T extends Base>(
       return row;
     },
     update: (id, patch) => {
+      if (!hydrated && typeof window !== "undefined") {
+        hydrate();
+      }
       let updated: T | undefined;
       rows = rows.map((r) => {
         if (r.id !== id) return r;
@@ -75,11 +91,15 @@ export function createRepository<T extends Base>(
       return updated;
     },
     remove: (id) => {
+      if (!hydrated && typeof window !== "undefined") {
+        hydrate();
+      }
       rows = rows.filter((r) => r.id !== id);
       persist();
     },
     replaceAll: (next) => {
       rows = next;
+      hydrated = true;
       persist();
     },
     subscribe: (listener) => {

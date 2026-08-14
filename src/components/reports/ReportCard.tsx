@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,7 @@ export function ReportCard({
   report,
   teachers,
   canEdit,
+  onSelect,
   onEdit,
   onDelete,
   onToggleHomework,
@@ -23,6 +24,7 @@ export function ReportCard({
   report: Report;
   teachers: Teacher[];
   canEdit: boolean;
+  onSelect?: (r: Report) => void;
   onEdit?: (r: Report) => void;
   onDelete?: (r: Report) => void;
   onToggleHomework?: (r: Report) => void;
@@ -30,58 +32,95 @@ export function ReportCard({
   const assessed = teachers.find((t) => t.id === report.teacherId)?.name ?? "—";
 
   return (
-    <Card>
-      <CardContent className="space-y-3 p-4">
+    <Card className="transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group">
+      <CardContent className="space-y-3 p-4" onClick={() => onSelect?.(report)}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="truncate font-medium">{assessed}</p>
+            <p className="truncate font-semibold text-foreground group-hover:text-primary transition-colors">
+              {assessed}
+            </p>
             <p className="text-xs text-muted-foreground">{formatDate(report.date)}</p>
           </div>
-          <div className="flex shrink-0 items-center gap-1">
-            <Badge variant="secondary">{materialLabel[report.material]}</Badge>
-            <Badge variant={gradeTone[report.grade]}>{report.grade}</Badge>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <Badge variant="secondary" className="text-xs">
+              {materialLabel[report.material]}
+            </Badge>
+            <Badge variant={gradeTone[report.grade]} className="font-bold">
+              {report.grade}
+            </Badge>
           </div>
         </div>
 
         <div className="text-sm">
-          <p className="font-medium">{report.materialDetail}</p>
-          <p className="text-muted-foreground">{report.reference}</p>
+          <p className="font-medium text-foreground">{report.materialDetail}</p>
+          <p className="text-xs text-muted-foreground">{report.reference}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span>Mustami': {report.mustamiName}</span>
-          <Badge variant="outline">{statusLabel[report.status]}</Badge>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>Mustami': <strong className="text-foreground/80 font-medium">{report.mustamiName}</strong></span>
+          <Badge variant="outline" className="text-[10px]">
+            {statusLabel[report.status]}
+          </Badge>
         </div>
 
         {report.mustamiNote && (
-          <p className="text-xs text-muted-foreground">Catatan: {report.mustamiNote}</p>
+          <p className="text-xs text-muted-foreground line-clamp-2 bg-muted/30 p-2 rounded border border-border/40">
+            <span className="font-medium text-foreground/70">Catatan:</span> {report.mustamiNote}
+          </p>
         )}
 
         {report.homework && (
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/60 p-2 text-xs">
-            <span className="min-w-0">PR: {report.homework}</span>
+          <div
+            className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/60 p-2 text-xs"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="min-w-0 font-medium text-foreground/90 truncate">PR: {report.homework}</span>
             {onToggleHomework ? (
-              <Button size="sm" variant="ghost" onClick={() => onToggleHomework(report)}>
-                {report.homeworkDone ? "Selesai" : "Tandai selesai"}
+              <Button size="sm" variant="ghost" onClick={() => onToggleHomework(report)} className="h-7 text-xs px-2">
+                {report.homeworkDone ? "✓ Selesai" : "Tandai selesai"}
               </Button>
             ) : (
-              <Badge variant={report.homeworkDone ? "default" : "secondary"}>
+              <Badge variant={report.homeworkDone ? "default" : "secondary"} className="text-[10px]">
                 {report.homeworkDone ? "Selesai" : "Belum"}
               </Badge>
             )}
           </div>
         )}
 
-        {canEdit && (
-          <div className="flex justify-end gap-1">
-            <Button size="sm" variant="ghost" onClick={() => onEdit?.(report)}>
-              <Pencil className="mr-1 size-3.5" /> Edit
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => onDelete?.(report)}>
-              <Trash2 className="mr-1 size-3.5" /> Hapus
-            </Button>
-          </div>
-        )}
+        <div
+          className="flex items-center justify-between pt-2 border-t border-border/50 text-xs text-muted-foreground"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+            onClick={() => onSelect?.(report)}
+          >
+            <Eye className="size-3.5" /> Detail
+          </Button>
+
+          {canEdit && (
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+                onClick={() => onEdit?.(report)}
+              >
+                <Pencil className="size-3.5" /> Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive gap-1"
+                onClick={() => onDelete?.(report)}
+              >
+                <Trash2 className="size-3.5" /> Hapus
+              </Button>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

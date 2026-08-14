@@ -1,4 +1,4 @@
-import { Pencil, Trash2, CheckCircle2, Clock } from "lucide-react";
+import { Eye, Pencil, Trash2, CheckCircle2, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,7 @@ export function ReportTable({
   teachers,
   canEdit,
   currentUserId,
+  onSelect,
   onEdit,
   onDelete,
   onToggleHomework,
@@ -32,6 +33,7 @@ export function ReportTable({
   teachers: Teacher[];
   canEdit: boolean;
   currentUserId?: string | undefined;
+  onSelect?: ((r: Report) => void) | undefined;
   onEdit?: ((r: Report) => void) | undefined;
   onDelete?: ((r: Report) => void) | undefined;
   onToggleHomework?: ((r: Report) => void) | undefined;
@@ -41,14 +43,14 @@ export function ReportTable({
       <Table>
         <TableHeader className="bg-muted/50">
           <TableRow>
-            <TableHead className="w-[120px] font-bold">Tanggal</TableHead>
+            <TableHead className="w-[110px] font-bold">Tanggal</TableHead>
             <TableHead className="font-bold">Guru</TableHead>
             <TableHead className="font-bold">Mustami'</TableHead>
             <TableHead className="font-bold">Materi & Ayat</TableHead>
-            <TableHead className="w-[110px] text-center font-bold">Nilai</TableHead>
+            <TableHead className="w-[100px] text-center font-bold">Nilai</TableHead>
             <TableHead className="font-bold">Catatan</TableHead>
             <TableHead className="font-bold">PR / Tugas</TableHead>
-            {canEdit && <TableHead className="w-[90px] text-right font-bold">Aksi</TableHead>}
+            <TableHead className="w-[110px] text-right font-bold">Aksi</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -61,12 +63,13 @@ export function ReportTable({
             return (
               <TableRow
                 key={report.id}
-                className="transition-colors hover:bg-accent/30 group"
+                className="transition-colors hover:bg-accent/30 cursor-pointer group"
+                onClick={() => onSelect?.(report)}
               >
                 <TableCell className="text-xs text-muted-foreground font-medium whitespace-nowrap">
                   {formatDate(report.date)}
                 </TableCell>
-                <TableCell className="font-medium text-sm text-foreground">
+                <TableCell className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
                   {assessedTeacher}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
@@ -91,7 +94,7 @@ export function ReportTable({
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex flex-col items-center gap-1">
-                    <Badge variant={gradeTone[report.grade]} className="text-xs px-2">
+                    <Badge variant={gradeTone[report.grade]} className="text-xs px-2 font-bold">
                       {report.grade}
                     </Badge>
                     <span className="text-[10px] text-muted-foreground">
@@ -99,13 +102,13 @@ export function ReportTable({
                     </span>
                   </div>
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate">
+                <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate">
                   {report.mustamiNote || "—"}
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   {report.homework ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground line-clamp-1">
+                      <span className="text-xs text-muted-foreground line-clamp-1 max-w-[140px]">
                         {report.homework}
                       </span>
                       {isHomeworkToggleable && onToggleHomework ? (
@@ -113,7 +116,7 @@ export function ReportTable({
                           size="sm"
                           variant={report.homeworkDone ? "outline" : "secondary"}
                           onClick={() => onToggleHomework(report)}
-                          className="h-6 px-2 text-[10px] font-medium"
+                          className="h-6 px-2 text-[10px] font-medium shrink-0"
                         >
                           {report.homeworkDone ? (
                             <>
@@ -138,30 +141,42 @@ export function ReportTable({
                     <span className="text-xs text-muted-foreground/50">—</span>
                   )}
                 </TableCell>
-                {canEdit && (
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-7 text-muted-foreground hover:text-foreground"
-                        onClick={() => onEdit?.(report)}
-                        title="Edit setoran"
-                      >
-                        <Pencil className="size-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-7 text-muted-foreground hover:text-destructive"
-                        onClick={() => onDelete?.(report)}
-                        title="Hapus setoran"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                )}
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="size-7 text-muted-foreground hover:text-foreground"
+                      onClick={() => onSelect?.(report)}
+                      title="Lihat detail"
+                    >
+                      <Eye className="size-3.5" />
+                    </Button>
+
+                    {canEdit && (
+                      <>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-7 text-muted-foreground hover:text-foreground"
+                          onClick={() => onEdit?.(report)}
+                          title="Edit setoran"
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => onDelete?.(report)}
+                          title="Hapus setoran"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </TableCell>
               </TableRow>
             );
           })}
