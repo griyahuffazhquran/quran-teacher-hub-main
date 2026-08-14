@@ -73,7 +73,42 @@ export type Target = {
   updatedAt: string;
 };
 
-export type NotificationType = "REPORT_CREATED" | "REPORT_UPDATED" | "HOMEWORK_PENDING" | "SYSTEM";
+export type FeedbackType = "mustami" | "upgrader";
+
+export type Feedback = {
+  id: ID;
+  reportId: ID;
+  authorId: ID;
+  authorName: string;
+  authorRole: UserRole;
+  type: FeedbackType;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReportComment = {
+  id: ID;
+  reportId: ID;
+  authorId: ID;
+  authorName: string;
+  authorRole?: UserRole;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type NotificationType =
+  | "REPORT_CREATED"
+  | "REPORT_UPDATED"
+  | "FEEDBACK_CREATED"
+  | "COMMENT_CREATED"
+  | "TARGET_CREATED"
+  | "TARGET_NEAR_DEADLINE"
+  | "HOMEWORK_PENDING"
+  | "ACHIEVEMENT_UNLOCKED"
+  | "ANNOUNCEMENT_CREATED"
+  | "SYSTEM";
 
 export type NotificationItem = {
   id: ID;
@@ -85,6 +120,9 @@ export type NotificationItem = {
   /** Penerima notifikasi; kosong = semua pengguna. */
   userId?: ID;
   reportId?: ID;
+  targetId?: ID;
+  feedbackId?: ID;
+  commentId?: ID;
   createdAt: string;
   updatedAt: string;
 };
@@ -94,13 +132,21 @@ export type ActivityLog = {
   action: string;
   description: string;
   actorId?: ID;
+  actorName?: string;
   entity?: string;
   entityId?: ID;
   createdAt: string;
   updatedAt: string;
 };
 
-export type Entity = Teacher | Report | Target | NotificationItem | ActivityLog;
+export type Entity =
+  | Teacher
+  | Report
+  | Target
+  | Feedback
+  | ReportComment
+  | NotificationItem
+  | ActivityLog;
 
 export type NewEntity<T extends { id: ID; createdAt: string; updatedAt: string }> = Omit<
   T,

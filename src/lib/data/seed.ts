@@ -1,5 +1,13 @@
 import { nowISO } from "./storage";
-import type { ActivityLog, NotificationItem, Report, Target, Teacher } from "./types";
+import type {
+  ActivityLog,
+  Feedback,
+  NotificationItem,
+  Report,
+  ReportComment,
+  Target,
+  Teacher,
+} from "./types";
 
 const stamp = () => ({ createdAt: nowISO(), updatedAt: nowISO() });
 
@@ -157,6 +165,54 @@ export function seedReports(): Report[] {
   ];
 }
 
+export function seedFeedbacks(): Feedback[] {
+  return [
+    {
+      id: "fb_1",
+      reportId: "rep_1",
+      authorId: "tea_ahmad",
+      authorName: "Ust. Ahmad Fauzan",
+      authorRole: "teacher",
+      type: "mustami",
+      content: "Fokus pada kelancaran mad thobi'i di ayat 18 dan perhatikan waqaf ibtida'.",
+      ...stamp(),
+    },
+    {
+      id: "fb_2",
+      reportId: "rep_1",
+      authorId: "tea_maryam",
+      authorName: "Ustzh. Maryam Azzahra",
+      authorRole: "upgrader",
+      type: "upgrader",
+      content: "Progres sangat baik! Pertahankan konsistensi setoran harian.",
+      ...stamp(),
+    },
+  ];
+}
+
+export function seedComments(): ReportComment[] {
+  return [
+    {
+      id: "com_1",
+      reportId: "rep_1",
+      authorId: "tea_abdullah",
+      authorName: "Ust. Abdullah Karim",
+      authorRole: "teacher",
+      content: "Jazakallahu khairan Ustadz atas koreksinya. PR ayat 15-20 sudah saya ulang kembali.",
+      ...stamp(),
+    },
+    {
+      id: "com_2",
+      reportId: "rep_1",
+      authorId: "tea_ahmad",
+      authorName: "Ust. Ahmad Fauzan",
+      authorRole: "teacher",
+      content: "Barakallahu fiik, insyaAllah besok kita simak kembali kelanjutannya.",
+      ...stamp(),
+    },
+  ];
+}
+
 export function seedTargets(): Target[] {
   return [
     {
@@ -206,27 +262,64 @@ export function seedNotifications(): NotificationItem[] {
       body: "Ust. Ahmad Fauzan memiliki PR yang belum diselesaikan.",
       level: "warning",
       read: false,
+      type: "HOMEWORK_PENDING",
+      reportId: "rep_1",
       ...stamp(),
     },
     {
       id: "not_2",
-      title: "Target tercapai 50%",
-      body: "Ustzh. Hanifah Salma mencapai 55 dari 100 halaman.",
+      title: "Feedback Baru dari Upgrader",
+      body: "Ustzh. Maryam Azzahra memberikan catatan evaluasi upgrading pada setoran QS. Al-Baqarah 1-20.",
       level: "info",
       read: false,
+      type: "FEEDBACK_CREATED",
+      reportId: "rep_1",
       ...stamp(),
     },
     {
       id: "not_3",
       title: "Setoran baru",
-      body: "3 setoran tercatat pekan ini.",
+      body: "Ust. Ahmad Fauzan menyimak setoran Ziyadah Al-Baqarah Anda.",
       level: "success",
       read: true,
+      type: "REPORT_CREATED",
+      reportId: "rep_1",
       ...stamp(),
     },
   ];
 }
 
 export function seedActivityLogs(): ActivityLog[] {
-  return [];
+  return [
+    {
+      id: "act_1",
+      action: "REPORT_CREATED",
+      description: "Ust. Ahmad Fauzan membuat setoran Ziyadah Al-Baqarah untuk Ust. Abdullah Karim.",
+      actorId: "tea_ahmad",
+      actorName: "Ust. Ahmad Fauzan",
+      entity: "reports",
+      entityId: "rep_1",
+      ...stamp(),
+    },
+    {
+      id: "act_2",
+      action: "FEEDBACK_CREATED",
+      description: "Ustzh. Maryam Azzahra memberikan feedback resmi untuk setoran Ust. Abdullah Karim.",
+      actorId: "tea_maryam",
+      actorName: "Ustzh. Maryam Azzahra",
+      entity: "feedbacks",
+      entityId: "fb_2",
+      ...stamp(),
+    },
+    {
+      id: "act_3",
+      action: "COMMENT_CREATED",
+      description: "Ust. Abdullah Karim mengirim komentar pada setoran QS. Al-Baqarah 1-20.",
+      actorId: "tea_abdullah",
+      actorName: "Ust. Abdullah Karim",
+      entity: "comments",
+      entityId: "com_1",
+      ...stamp(),
+    },
+  ];
 }
