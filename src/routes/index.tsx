@@ -33,7 +33,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Dashboard | Griya Huffazh Quran Upgrading" },
       {
         property: "og:description",
-        content: "Pantau setoran, target, dan progres upgrading guru Griya Huffazh Quran.",
+        content: "Dashboard sistem manajemen upgrading guru Griya Huffazh Quran: pantau setoran, target, dan progres pengajar.",
       },
     ],
   }),

@@ -79,28 +79,31 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Griya Huffazh Quran — Teacher Upgrading Management" },
+      { title: "Dashboard | Griya Huffazh Quran Upgrading" },
       {
         name: "description",
         content:
-          "Sistem manajemen upgrading guru Griya Huffazh Quran: setoran, penilaian, target, dan analitik.",
+          "Dashboard sistem manajemen upgrading guru Griya Huffazh Quran: pantau setoran, target, dan progres pengajar.",
       },
       { name: "author", content: "Griya Huffazh Quran" },
-      { property: "og:title", content: "Griya Huffazh Quran — Teacher Upgrading Management" },
+      { property: "og:title", content: "Dashboard | Griya Huffazh Quran Upgrading" },
       {
         property: "og:description",
-        content: "Sistem manajemen upgrading guru Griya Huffazh Quran.",
+        content: "Dashboard sistem manajemen upgrading guru Griya Huffazh Quran: pantau setoran, target, dan progres pengajar.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Dashboard | Griya Huffazh Quran Upgrading" },
+      { name: "twitter:description", content: "Dashboard sistem manajemen upgrading guru Griya Huffazh Quran: pantau setoran, target, dan progres pengajar." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/75f6c7ac-0016-48a4-ac87-b289148545eb/id-preview-c4d9c6cd--140272e5-bfd8-47f4-85fb-78e14e405f6d.lovable.app-1786678305741.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/75f6c7ac-0016-48a4-ac87-b289148545eb/id-preview-c4d9c6cd--140272e5-bfd8-47f4-85fb-78e14e405f6d.lovable.app-1786678305741.png" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
