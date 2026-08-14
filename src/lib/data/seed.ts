@@ -2,6 +2,7 @@ import { nowISO } from "./storage";
 import type {
   Achievement,
   ActivityLog,
+  Announcement,
   Feedback,
   NotificationItem,
   Reminder,
@@ -402,6 +403,33 @@ export function seedNotifications(): NotificationItem[] {
       read: true,
       type: "REPORT_CREATED",
       reportId: "rep_1",
+      ...stamp(),
+    },
+  ];
+}
+
+export function seedAnnouncements(): Announcement[] {
+  return [
+    {
+      id: "ann_1",
+      title: "Jadwal Evaluasi Upgrading Semester Genap",
+      content:
+        "Assalamu'alaikum Wr. Wb. Diberitahukan kepada seluruh ustadz dan ustadzah bahwa sesi ujian evaluasi mutqin semester akan dilaksanakan pada tanggal 25-30 bulan ini. Harap persiapkan target setoran masing-masing.",
+      authorId: "tea_maryam",
+      authorName: "Ustzh. Maryam Azzahra",
+      pinned: true,
+      audience: "all",
+      ...stamp(),
+    },
+    {
+      id: "ann_2",
+      title: "Pedoman Standar Makhraj & Tajwid Matn Jazariyah",
+      content:
+        "Guna menstandarkan penilaian setoran Matn, Koordinator Upgrading telah menerbitkan panduan pengujian tajwid. Panduan dapat diakses pada halaman pengumuman dan materi.",
+      authorId: "tea_maryam",
+      authorName: "Ustzh. Maryam Azzahra",
+      pinned: false,
+      audience: "teachers",
       ...stamp(),
     },
   ];

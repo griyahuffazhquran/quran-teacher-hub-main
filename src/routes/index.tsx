@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { AnnouncementBanner } from "@/components/announcements/AnnouncementBanner";
 import { ReportCard } from "@/components/reports/ReportCard";
 import { ReportDetailDrawer } from "@/components/reports/ReportDetailDrawer";
 import { ReportFormDialog } from "@/components/reports/ReportFormDialog";
@@ -374,6 +375,9 @@ function Dashboard() {
           ) : null
         }
       />
+
+      {/* Pinned Institutional Announcement Banner */}
+      <AnnouncementBanner />
 
       {/* Overview Statistics Grid (6 Cards) */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6 mb-6">

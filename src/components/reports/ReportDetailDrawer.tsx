@@ -9,10 +9,12 @@ import {
   MessageSquare,
   MessageSquareText,
   Pencil,
+  Printer,
   Trash2,
   User,
   UserCheck,
 } from "lucide-react";
+import { printReportEvaluationSheet } from "@/lib/services/reporting-export-service";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -232,43 +234,55 @@ export function ReportDetailDrawer({
         </div>
 
         {/* Footer Actions */}
-        {canEdit && (
-          <div className="flex items-center gap-2 pt-4 border-t border-border mt-6">
-            <Button
-              variant="outline"
-              className="flex-1 text-xs gap-1.5"
-              onClick={() => {
-                onOpenChange(false);
-                onEdit?.(report);
-              }}
-            >
-              <Pencil className="size-3.5" /> Edit Setoran
-            </Button>
+        <div className="flex items-center gap-2 pt-4 border-t border-border mt-6 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 text-xs gap-1.5"
+            onClick={() => printReportEvaluationSheet(report, assessedName)}
+          >
+            <Printer className="size-3.5" /> Cetak Evaluasi
+          </Button>
 
-            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="default" className="text-xs gap-1.5">
-                  <Trash2 className="size-3.5" /> Hapus
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Hapus Setoran Ini?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Setoran materi <strong>{report.materialDetail}</strong> ({report.reference}) untuk{" "}
-                    <strong>{assessedName}</strong> akan dihapus (soft delete) dari sistem.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Batal</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Ya, Hapus
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        )}
+          {canEdit && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs gap-1.5"
+                onClick={() => {
+                  onOpenChange(false);
+                  onEdit?.(report);
+                }}
+              >
+                <Pencil className="size-3.5" /> Edit
+              </Button>
+
+              <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" className="text-xs gap-1.5">
+                    <Trash2 className="size-3.5" /> Hapus
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Hapus Setoran Ini?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Setoran materi <strong>{report.materialDetail}</strong> ({report.reference}) untuk{" "}
+                      <strong>{assessedName}</strong> akan dihapus (soft delete) dari sistem.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Ya, Hapus
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
+        </div>
       </SheetContent>
     </Sheet>
   );

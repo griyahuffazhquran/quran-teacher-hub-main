@@ -142,6 +142,20 @@ export type TeacherRank = {
   color: string;
 };
 
+export type AnnouncementAudience = "all" | "teachers" | "upgraders";
+
+export type Announcement = {
+  id: ID;
+  title: string;
+  content: string;
+  authorId: ID;
+  authorName: string;
+  pinned: boolean;
+  audience: AnnouncementAudience;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type NotificationType =
   | "REPORT_CREATED"
   | "REPORT_UPDATED"
@@ -173,6 +187,7 @@ export type NotificationItem = {
   commentId?: ID;
   reminderId?: ID;
   achievementId?: ID;
+  announcementId?: ID;
   createdAt: string;
   updatedAt: string;
 };
@@ -198,7 +213,8 @@ export type Entity =
   | ReportComment
   | NotificationItem
   | ActivityLog
-  | Achievement;
+  | Achievement
+  | Announcement;
 
 export type NewEntity<T extends { id: ID; createdAt: string; updatedAt: string }> = Omit<
   T,
