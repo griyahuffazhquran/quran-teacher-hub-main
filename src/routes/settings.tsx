@@ -118,12 +118,21 @@ function SettingsPage() {
     }
     setGasApiUrl(gasUrlInput);
     setSyncingGas(true);
-    const res = await syncAllFromGas();
-    setSyncingGas(false);
-    if (res.ok) {
-      toast.success(`Sinkronisasi berhasil! ${res.count || 0} koleksi data diperbarui dari Google Sheets.`);
-    } else {
-      toast.error(res.error || "Gagal sinkronisasi data.");
+    try {
+      const res = await syncAllFromGas();
+      setSyncingGas(false);
+      if (res.ok) {
+        if (res.count && res.count > 0) {
+          toast.success(`Sinkronisasi berhasil! ${res.count} koleksi data diperbarui dari Google Sheets.`);
+        } else {
+          toast.info("Terkoneksi ke Google Apps Script! (Belum ada data baru di Google Sheets).");
+        }
+      } else {
+        toast.error(res.error || "Gagal sinkronisasi data.");
+      }
+    } catch (err: any) {
+      setSyncingGas(false);
+      toast.error("Terjadi kesalahan sinkronisasi: " + (err?.message || "Koneksi gagal."));
     }
   };
 
