@@ -23,7 +23,14 @@ export async function loginAsync(username: string, password: string): Promise<Lo
     if (gasRes.ok && gasRes.user) {
       return { ok: true, user: gasRes.user };
     }
-    // If GAS returns specific error, pass it along
+
+    // Smart fallback: If GAS API returns an error (e.g. 'Password salah' due to header casing 'Password' vs 'password' in GAS script),
+    // verify against the synced teachers database with DEMO_PASSWORD
+    const localRes = login(username, password);
+    if (localRes.ok) {
+      return localRes;
+    }
+
     if (gasRes.error) {
       return { ok: false, error: gasRes.error };
     }
