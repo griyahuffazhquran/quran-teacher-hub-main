@@ -7,6 +7,9 @@ import {
   CheckCheck,
   CheckCircle2,
   Crown,
+  Eye,
+  EyeOff,
+  KeyRound,
   Lock,
   Pencil,
   Phone,
@@ -44,6 +47,7 @@ import {
   evaluateTeacherAchievements,
   masterAchievements,
 } from "@/lib/services/achievement-service";
+import { DEMO_PASSWORD } from "@/lib/services/auth-service";
 import { initials, patchTeacher } from "@/lib/services/teacher-service";
 
 export const Route = createFileRoute("/profile")({
@@ -104,6 +108,14 @@ function ProfilePage() {
 
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -116,6 +128,34 @@ function ProfilePage() {
     });
 
     toast.success("Profil Anda berhasil diperbarui!");
+  };
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    const expectedPassword = user.password || DEMO_PASSWORD;
+    if (currentPassword !== expectedPassword) {
+      toast.error("Password saat ini tidak sesuai.");
+      return;
+    }
+
+    if (newPassword.trim().length < 4) {
+      toast.error("Password baru minimal 4 karakter.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("Konfirmasi password baru tidak cocok.");
+      return;
+    }
+
+    patchTeacher(user.id, { password: newPassword.trim() });
+    toast.success("Password berhasil diperbarui dan disinkronkan ke backend!");
+
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
   };
 
   if (!sessionReady || !user) {
@@ -311,9 +351,10 @@ function ProfilePage() {
           </div>
         </TabsContent>
 
-        {/* TAB 2: PENGATURAN PROFIL */}
-        <TabsContent value="settings" className="mt-4">
-          <Card className="max-w-xl border-border shadow-xs">
+        {/* TAB 2: PENGATURAN PROFIL & PASSWORD */}
+        <TabsContent value="settings" className="mt-4 grid gap-6 md:grid-cols-2">
+          {/* Card 1: Ubah Informasi Profil */}
+          <Card className="border-border shadow-xs">
             <CardHeader>
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <User className="size-4 text-primary" /> Ubah Informasi Profil
@@ -363,6 +404,91 @@ function ProfilePage() {
 
                 <Button type="submit" className="w-full h-9 text-xs font-medium mt-2">
                   Simpan Perubahan Profil
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Card 2: Ganti Password Akun */}
+          <Card className="border-border shadow-xs">
+            <CardHeader>
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <KeyRound className="size-4 text-amber-500" /> Ganti Password Akun
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Password Saat Ini</Label>
+                  <div className="relative">
+                    <Input
+                      type={showCurrentPass ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Masukkan password lama"
+                      className="h-9 text-xs pr-9"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowCurrentPass(!showCurrentPass)}
+                    >
+                      {showCurrentPass ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Password Baru</Label>
+                  <div className="relative">
+                    <Input
+                      type={showNewPass ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Minimal 4 karakter"
+                      className="h-9 text-xs pr-9"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowNewPass(!showNewPass)}
+                    >
+                      {showNewPass ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Konfirmasi Password Baru</Label>
+                  <div className="relative">
+                    <Input
+                      type={showConfirmPass ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Ketik ulang password baru"
+                      className="h-9 text-xs pr-9"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowConfirmPass(!showConfirmPass)}
+                    >
+                      {showConfirmPass ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                    </Button>
+                  </div>
+                </div>
+
+                <Button type="submit" variant="secondary" className="w-full h-9 text-xs font-medium mt-2">
+                  Update & Sinkron Password
                 </Button>
               </form>
             </CardContent>

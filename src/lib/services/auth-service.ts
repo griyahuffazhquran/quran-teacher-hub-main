@@ -50,7 +50,8 @@ export function login(username: string, password: string): LoginResult {
 
   if (!user) return { ok: false, error: "Akun tidak ditemukan." };
   if (user.status !== "aktif") return { ok: false, error: "Akun tidak aktif." };
-  if (password !== DEMO_PASSWORD) return { ok: false, error: "Password salah." };
+  const expectedPassword = user.password || DEMO_PASSWORD;
+  if (password !== expectedPassword) return { ok: false, error: "Password salah." };
 
   setSession({ userId: user.id, loggedInAt: new Date().toISOString() });
   return { ok: true, user };

@@ -13,6 +13,7 @@ export type Teacher = {
   level: string;
   joinedAt: string; // ISO date
   username?: string;
+  password?: string;
   role?: UserRole;
   position?: string;
   specialization?: string;

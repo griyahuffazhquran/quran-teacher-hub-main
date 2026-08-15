@@ -110,6 +110,7 @@ function normalizeRow(repoName: string, row: any): any {
         id,
         name: String(row["Nama Guru"] || row.name || "Pengajar"),
         username: String(row.Username || row.username || "").toLowerCase(),
+        password: String(row.Password || row.password || "griya123"),
         gender: (row.Gender || row.gender || "ustadz") === "ustadzah" ? "ustadzah" : "ustadz",
         role: (row.Role || row.role || "teacher") === "upgrader" ? "upgrader" : "teacher",
         position: String(row.Jabatan || row.position || ""),
