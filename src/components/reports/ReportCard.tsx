@@ -1,9 +1,11 @@
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, MessageSquare, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate, materialLabel, parseGrade, statusLabel } from "@/lib/data/selectors";
 import type { Report, Teacher } from "@/lib/data/types";
+import { getWhatsAppDirectUrl } from "@/lib/whatsapp";
 
 const gradeTone: Record<Report["grade"], "default" | "secondary" | "destructive"> = {
   A: "default",
@@ -101,26 +103,57 @@ export function ReportCard({
             <Eye className="size-3.5" /> Detail
           </Button>
 
-          {canEdit && (
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
-                onClick={() => onEdit?.(report)}
-              >
-                <Pencil className="size-3.5" /> Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive gap-1"
-                onClick={() => onDelete?.(report)}
-              >
-                <Trash2 className="size-3.5" /> Hapus
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 gap-1 font-medium"
+              onClick={() => {
+                const targetTeacher = teachers.find((t) => t.id === report.teacherId);
+                const phone = targetTeacher?.phone || "";
+                if (!phone) {
+                  toast.error(`Nomor WhatsApp untuk ${assessed} belum diisi.`);
+                  return;
+                }
+                const url = getWhatsAppDirectUrl({
+                  namaPeserta: assessed,
+                  nomorWaPeserta: phone,
+                  namaSurah: report.materialDetail || report.material,
+                  ayatAwal: report.reference || "-",
+                  ayatAkhir: "-",
+                  nilai: report.grade,
+                  catatan: report.mustamiNote || report.homework || "-",
+                  namaPenguji: report.mustamiName,
+                  tanggal: report.date,
+                });
+                toast.info(`Membuka WhatsApp untuk ${assessed}...`);
+                window.open(url, "_blank");
+              }}
+            >
+              <MessageSquare className="size-3.5" /> WA
+            </Button>
+
+            {canEdit && (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+                  onClick={() => onEdit?.(report)}
+                >
+                  <Pencil className="size-3.5" /> Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive gap-1"
+                  onClick={() => onDelete?.(report)}
+                >
+                  <Trash2 className="size-3.5" /> Hapus
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

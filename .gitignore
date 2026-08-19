@@ -17,6 +17,10 @@ dist-ssr
 .nitro
 *.local
 
+# WhatsApp Web.js session data
+.wwebjs_auth/
+.wwebjs_cache/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars

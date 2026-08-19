@@ -27,6 +27,7 @@ import {
   validateReport,
   type ReportInput,
 } from "@/lib/services/report-service";
+import { sendWhatsAppNotifSetoran } from "@/lib/whatsapp";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -85,7 +86,7 @@ export function ReportFormDialog({
 
   const options = teachers.filter((t) => t.id !== currentUser.id && t.status === "aktif");
 
-  const submit = () => {
+  const submit = async () => {
     if (saving) return;
     const result = validateReport(form, currentUser.id, reports, editing?.id);
     if (!result.ok) {
@@ -99,8 +100,31 @@ export function ReportFormDialog({
         updateReport(editing.id, form, currentUser, assessedName);
         toast.success("Setoran diperbarui.");
       } else {
-        createReport(form, currentUser, assessedName);
+        const newReport = createReport(form, currentUser, assessedName);
         toast.success(`Setoran ${assessedName} tersimpan.`);
+
+        // Kirim notifikasi WhatsApp otomatis via server (whatsapp-web.js)
+        const targetTeacher = teachers.find((t) => t.id === form.teacherId);
+        const nomorWa = targetTeacher?.phone || "";
+
+        if (nomorWa) {
+          const waResult = await sendWhatsAppNotifSetoran({
+            namaPeserta: assessedName,
+            nomorWaPeserta: nomorWa,
+            namaSurah: form.materialDetail || form.material,
+            ayatAwal: form.reference || "-",
+            ayatAkhir: "-",
+            nilai: form.grade,
+            catatan: form.mustamiNote || form.homework || "-",
+            namaPenguji: currentUser.name,
+            tanggal: form.date,
+          });
+
+          if (waResult.webUrl) {
+            toast.info(`Membuka WhatsApp untuk ${assessedName}... Silakan klik Kirim di WhatsApp!`);
+            window.open(waResult.webUrl, "_blank");
+          }
+        }
       }
       onOpenChange(false);
     } catch {
