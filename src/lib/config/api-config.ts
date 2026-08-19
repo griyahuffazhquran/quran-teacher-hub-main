@@ -4,10 +4,6 @@ export const DEFAULT_GAS_API_URL =
   "https://script.google.com/macros/s/AKfycbxjkSv0cAHRYDecKbyGsEKwoctLKm1Thi-S-fDnunwu7rvW-B2BA7dsyIWAU4MF33UD0w/exec";
 
 export function getGasApiUrl(): string {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && saved.trim()) return saved.trim();
-  }
   return DEFAULT_GAS_API_URL;
 }
 
