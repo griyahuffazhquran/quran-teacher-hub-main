@@ -5,9 +5,50 @@ export function teacherName(teachers: Teacher[], id: string): string {
 }
 
 export function isThisMonth(dateISO: string): boolean {
-  const d = new Date(dateISO);
-  const now = new Date();
-  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  if (!dateISO) return false;
+  let s = String(dateISO).trim();
+  const match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (match) {
+    const day = match[1]!.padStart(2, "0");
+    const month = match[2]!.padStart(2, "0");
+    const year = match[3]!;
+    s = `${year}-${month}-${day}`;
+  }
+  try {
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return false;
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  } catch {
+    return false;
+  }
+}
+
+export function formatDate(dateISO: string | undefined | null): string {
+  if (!dateISO) return "—";
+  const s = String(dateISO).trim();
+  if (!s) return "—";
+
+  let parsableDate = s;
+  const match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (match) {
+    const day = match[1]!.padStart(2, "0");
+    const month = match[2]!.padStart(2, "0");
+    const year = match[3]!;
+    parsableDate = `${year}-${month}-${day}`;
+  }
+
+  try {
+    const d = new Date(parsableDate);
+    if (isNaN(d.getTime())) return s;
+    return d.toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return s;
+  }
 }
 
 export const gradeValue: Record<Grade, number> = { A: 95, B: 85, C: 75, D: 65 };
@@ -75,14 +116,6 @@ export function unreadCount(items: NotificationItem[]): number {
 
 export function sortByDateDesc<T extends { date: string }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => b.date.localeCompare(a.date));
-}
-
-export function formatDate(dateISO: string): string {
-  return new Date(dateISO).toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 export const materialLabel: Record<MaterialType, string> = {
