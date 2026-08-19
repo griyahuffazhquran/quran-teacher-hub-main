@@ -87,7 +87,7 @@ export function calculateTeacherXpAndRank(
   const teacherReports = reports.filter((r) => r.teacherId === teacherId && !r.isDeleted);
   const teacherTargets = targets.filter((t) => t.teacherId === teacherId && !t.isDeleted);
   const teacherMustami = reports.filter((r) => r.mustamiId === teacherId && !r.isDeleted);
-  const unlockedAchievements = achievements.filter((a) => a.teacherId === teacherId);
+  const unlockedAchievements = achievements.filter((a) => a.teacherId === teacherId && !a.isDeleted);
 
   // XP Breakdown calculation
   const setoranXp = teacherReports.length * 30; // 30 XP per setoran
@@ -133,12 +133,21 @@ export function calculateTeacherXpAndRank(
   };
 }
 
+const recentEvaluations = new Map<string, number>();
+
 export function evaluateTeacherAchievements(teacherId: string): void {
   if (!teacherId) return;
+
+  // Throttle evaluations to max once every 3 seconds per teacherId
+  const now = Date.now();
+  const lastEval = recentEvaluations.get(teacherId) || 0;
+  if (now - lastEval < 3000) return;
+  recentEvaluations.set(teacherId, now);
+
   const teacherObj = teacherRepo.get(teacherId);
   const reports = reportRepo.list().filter((r) => !r.isDeleted);
   const targets = targetRepo.list().filter((t) => !t.isDeleted);
-  const existingAchievements = achievementRepo.list().filter((a) => a.teacherId === teacherId);
+  const existingAchievements = achievementRepo.list().filter((a) => a.teacherId === teacherId && !a.isDeleted);
 
   const unlockedCodes = new Set(existingAchievements.map((a) => a.code));
 
