@@ -18,6 +18,8 @@ export type Teacher = {
   position?: string;
   specialization?: string;
   photoUrl?: string;
+  isDeleted?: boolean;
+  deletedAt?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -121,7 +123,7 @@ export type ReportComment = {
   updatedAt: string;
 };
 
-export type AchievementCategory = "setoran" | "target" | "mustami" | "tahsin" | "level";
+export type AchievementCategory = "umum" | "setoran" | "target" | "mustami" | "tahsin" | "level";
 
 export type Achievement = {
   id: ID;
@@ -133,6 +135,8 @@ export type Achievement = {
   icon: string;
   points: number;
   unlockedAt: string; // ISO date
+  isDeleted?: boolean;
+  deletedAt?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -156,6 +160,8 @@ export type Announcement = {
   pinned: boolean;
   audience: AnnouncementAudience;
   dueDate?: string;
+  isDeleted?: boolean;
+  deletedAt?: string;
   createdAt: string;
   updatedAt: string;
 };

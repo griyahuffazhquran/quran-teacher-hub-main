@@ -1,4 +1,4 @@
-import { achievementRepo, reportRepo, targetRepo } from "@/lib/data/repositories";
+import { achievementRepo, reportRepo, targetRepo, teacherRepo } from "@/lib/data/repositories";
 import type { Achievement, AchievementCategory, Report, Target, TeacherRank } from "@/lib/data/types";
 import { logActivity, notify } from "./notification-service";
 
