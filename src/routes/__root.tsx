@@ -85,6 +85,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Dashboard sistem manajemen upgrading guru Griya Huffazh Quran: pantau setoran, target, dan progres pengajar.",
       },
+      { name: "theme-color", content: "#0f766e" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "author", content: "Griya Huffazh Quran" },
       { property: "og:title", content: "Dashboard | Griya Huffazh Quran Upgrading" },
       {
@@ -100,6 +103,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/75f6c7ac-0016-48a4-ac87-b289148545eb/id-preview-c4d9c6cd--140272e5-bfd8-47f4-85fb-78e14e405f6d.lovable.app-1786678305741.png" },
     ],
     links: [
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "apple-touch-icon", href: "/favicon.ico" },
       {
         rel: "stylesheet",
         href: appCss,
@@ -134,6 +139,14 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
+      });
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AchievementsRouteImport } from './routes/achievements'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as LoginRouteImport } from './routes/login'
@@ -23,6 +24,11 @@ import { Route as TeachersRouteImport } from './routes/teachers'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AchievementsRoute = AchievementsRouteImport.update({
+  id: '/achievements',
+  path: '/achievements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
@@ -73,6 +79,7 @@ const TeachersRoute = TeachersRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/achievements': typeof AchievementsRoute
   '/analytics': typeof AnalyticsRoute
   '/announcements': typeof AnnouncementsRoute
   '/login': typeof LoginRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/achievements': typeof AchievementsRoute
   '/analytics': typeof AnalyticsRoute
   '/announcements': typeof AnnouncementsRoute
   '/login': typeof LoginRoute
@@ -98,6 +106,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/achievements': typeof AchievementsRoute
   '/analytics': typeof AnalyticsRoute
   '/announcements': typeof AnnouncementsRoute
   '/login': typeof LoginRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/achievements'
     | '/analytics'
     | '/announcements'
     | '/login'
@@ -124,6 +134,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/achievements'
     | '/analytics'
     | '/announcements'
     | '/login'
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/achievements'
     | '/analytics'
     | '/announcements'
     | '/login'
@@ -149,6 +161,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AchievementsRoute: typeof AchievementsRoute
   AnalyticsRoute: typeof AnalyticsRoute
   AnnouncementsRoute: typeof AnnouncementsRoute
   LoginRoute: typeof LoginRoute
@@ -167,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/achievements': {
+      id: '/achievements'
+      path: '/achievements'
+      fullPath: '/achievements'
+      preLoaderRoute: typeof AchievementsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analytics': {
@@ -237,6 +257,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AchievementsRoute: AchievementsRoute,
   AnalyticsRoute: AnalyticsRoute,
   AnnouncementsRoute: AnnouncementsRoute,
   LoginRoute: LoginRoute,

@@ -9,6 +9,7 @@ import { ReportCard } from "@/components/reports/ReportCard";
 import { ReportDetailDrawer } from "@/components/reports/ReportDetailDrawer";
 import { ReportFormDialog } from "@/components/reports/ReportFormDialog";
 import { ReportTable } from "@/components/reports/ReportTable";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -135,15 +136,12 @@ function Page() {
     setDrawerOpen(true);
   };
 
-  const handleDelete = (r: Report, mode: "permanent" | "soft" = "permanent") => {
+  const [deleteTargetReport, setDeleteTargetReport] = useState<Report | null>(null);
+
+  const handleDelete = (r: Report) => {
     if (!user) return;
-    if (mode === "permanent") {
-      reportRepo.remove(r.id);
-      toast.success("Setoran dihapus permanen (clear database).");
-    } else {
-      softDeleteReport(r.id, user.id);
-      toast.success("Setoran diarsipkan.");
-    }
+    softDeleteReport(r.id, user.id);
+    toast.success("Setoran berhasil dihapus.");
     if (selectedReport?.id === r.id) {
       setDrawerOpen(false);
       setSelectedReport(null);
@@ -189,7 +187,7 @@ function Page() {
             setEditing(rep);
             setDialogOpen(true);
           }}
-          onDelete={handleDelete}
+          onDelete={(rep) => setDeleteTargetReport(rep)}
           onToggleHomework={handleToggle}
         />
       );
@@ -208,7 +206,7 @@ function Page() {
               setEditing(rep);
               setDialogOpen(true);
             }}
-            onDelete={handleDelete}
+            onDelete={(rep) => setDeleteTargetReport(rep)}
             {...(r.homework && (canEdit || r.teacherId === user?.id)
               ? { onToggleHomework: handleToggle }
               : {})}
@@ -366,8 +364,25 @@ function Page() {
           setEditing(rep);
           setDialogOpen(true);
         }}
-        onDelete={handleDelete}
+        onDelete={(rep) => setDeleteTargetReport(rep)}
         onToggleHomework={handleToggle}
+      />
+
+      <ConfirmDeleteDialog
+        open={!!deleteTargetReport}
+        onOpenChange={(open) => !open && setDeleteTargetReport(null)}
+        title="Konfirmasi Hapus Setoran"
+        itemName={
+          deleteTargetReport
+            ? teachers.find((t) => t.id === deleteTargetReport.teacherId)?.name || "Setoran"
+            : "Setoran"
+        }
+        onConfirm={() => {
+          if (deleteTargetReport) {
+            handleDelete(deleteTargetReport);
+            setDeleteTargetReport(null);
+          }
+        }}
       />
     </AppShell>
   );

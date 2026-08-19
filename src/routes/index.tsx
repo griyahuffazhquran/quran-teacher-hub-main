@@ -22,6 +22,7 @@ import { ReportCard } from "@/components/reports/ReportCard";
 import { ReportDetailDrawer } from "@/components/reports/ReportDetailDrawer";
 import { ReportFormDialog } from "@/components/reports/ReportFormDialog";
 import { ReportTable } from "@/components/reports/ReportTable";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -260,15 +261,12 @@ function Dashboard() {
     setDialogOpen(true);
   };
 
-  const handleDelete = (report: Report, mode: "permanent" | "soft" = "permanent") => {
+  const [deleteTargetReport, setDeleteTargetReport] = useState<Report | null>(null);
+
+  const handleDelete = (report: Report) => {
     if (!user) return;
-    if (mode === "permanent") {
-      reportRepo.remove(report.id);
-      toast.success("Setoran berhasil dihapus permanen (clear database).");
-    } else {
-      softDeleteReport(report.id, user.id);
-      toast.success("Setoran diarsipkan.");
-    }
+    softDeleteReport(report.id, user.id);
+    toast.success("Setoran berhasil dihapus.");
     if (selectedReport?.id === report.id) {
       setDrawerOpen(false);
       setSelectedReport(null);
@@ -584,8 +582,26 @@ function Dashboard() {
         }
         currentUserId={user?.id}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        onDelete={(report) => setDeleteTargetReport(report)}
         onToggleHomework={handleToggleHomework}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmDeleteDialog
+        open={!!deleteTargetReport}
+        onOpenChange={(open) => !open && setDeleteTargetReport(null)}
+        title="Konfirmasi Hapus Setoran"
+        itemName={
+          deleteTargetReport
+            ? teachers.find((t) => t.id === deleteTargetReport.teacherId)?.name || "Setoran"
+            : "Setoran"
+        }
+        onConfirm={() => {
+          if (deleteTargetReport) {
+            handleDelete(deleteTargetReport);
+            setDeleteTargetReport(null);
+          }
+        }}
       />
     </AppShell>
   );

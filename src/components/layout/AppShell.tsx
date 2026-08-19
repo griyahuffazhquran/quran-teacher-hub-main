@@ -101,9 +101,9 @@ function Brand({ collapsed }: { collapsed?: boolean }) {
       {!collapsed && (
         <div className="min-w-0 transition-all duration-300">
           <p className="truncate text-sm font-bold leading-tight tracking-tight group-hover:text-primary transition-colors">
-            Griya Huffazh
+            Griya Huffazh Quran
           </p>
-          <p className="truncate text-[11px] font-medium text-muted-foreground">Teacher Upgrading</p>
+          <p className="truncate text-[11px] font-medium text-muted-foreground">Upgrading System</p>
         </div>
       )}
     </Link>
@@ -256,7 +256,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Role-Based Access Guard (Item 10)
   useEffect(() => {
     if (ready && user && !isUpgrader) {
-      if (pathname.startsWith("/teachers") || pathname.startsWith("/analytics")) {
+      if (
+        pathname.startsWith("/teachers") ||
+        pathname.startsWith("/analytics") ||
+        pathname.startsWith("/achievements")
+      ) {
         toast.error("Akses terbatas. Menu ini khusus untuk Upgrader/Pengurus.");
         void navigate({ to: "/" });
       }

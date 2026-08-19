@@ -8,6 +8,7 @@ import {
   Settings,
   UserRound,
   Megaphone,
+  Award,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/lib/data/types";
@@ -25,6 +26,7 @@ export function getPrimaryNav(role?: UserRole): NavItem[] {
       { label: "Dashboard", to: "/", icon: LayoutDashboard },
       { label: "Setoran", to: "/reports", icon: ClipboardList },
       { label: "Target", to: "/targets", icon: Target },
+      { label: "Lencana & XP", to: "/achievements", icon: Award },
       { label: "Pengumuman", to: "/announcements", icon: Megaphone, badgeKey: "announcements" },
       { label: "Guru", to: "/teachers", icon: Users },
       { label: "Analitik", to: "/analytics", icon: BarChart3 },
