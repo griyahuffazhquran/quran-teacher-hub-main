@@ -256,11 +256,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Role-Based Access Guard (Item 10)
   useEffect(() => {
     if (ready && user && !isUpgrader) {
-      if (
-        pathname.startsWith("/teachers") ||
-        pathname.startsWith("/analytics") ||
-        pathname.startsWith("/achievements")
-      ) {
+      if (pathname.startsWith("/teachers") || pathname.startsWith("/analytics")) {
         toast.error("Akses terbatas. Menu ini khusus untuk Upgrader/Pengurus.");
         void navigate({ to: "/" });
       }

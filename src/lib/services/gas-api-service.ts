@@ -93,6 +93,39 @@ export async function postToGas<T = any>(
   }
 }
 
+/** Converts ISO/any date string to dd/mm/yyyy format for Google Spreadsheet */
+function formatDateDDMMYYYY(val: string | undefined): string {
+  if (!val) return "";
+  const s = String(val).trim();
+  if (!s) return "";
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) return s;
+  try {
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return s;
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return s;
+  }
+}
+
+/** Parses date string safely from dd/mm/yyyy or ISO to YYYY-MM-DD */
+function parseGasDate(val: string | undefined): string {
+  if (!val) return "";
+  const s = String(val).trim();
+  if (!s) return "";
+  const match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (match) {
+    const day = match[1]!.padStart(2, "0");
+    const month = match[2]!.padStart(2, "0");
+    const year = match[3]!;
+    return `${year}-${month}-${day}`;
+  }
+  return s;
+}
+
 /** Normalize individual row objects safely based on repository collection name */
 function normalizeRow(repoName: string, row: any): any {
   if (!row || typeof row !== "object") return null;
@@ -101,8 +134,8 @@ function normalizeRow(repoName: string, row: any): any {
   if (!rawId) return null;
 
   const id = String(rawId).trim();
-  const createdAt = String(row["Created At"] || row.createdAt || new Date().toISOString());
-  const updatedAt = String(row["Updated At"] || row.updatedAt || new Date().toISOString());
+  const createdAt = parseGasDate(row["Created At"] || row.createdAt || new Date().toISOString());
+  const updatedAt = parseGasDate(row["Updated At"] || row.updatedAt || new Date().toISOString());
   const isDeleted = String(row["Status Dihapus"] || row.isDeleted || "").toUpperCase() === "YA" || Boolean(row.isDeleted);
 
   switch (repoName) {
@@ -119,7 +152,7 @@ function normalizeRow(repoName: string, row: any): any {
         level: String(row["Level Target"] || row.level || "Juz 1"),
         phone: String(row["No HP"] || row.phone || ""),
         status: (row.Status || row.status || "aktif") === "nonaktif" ? "nonaktif" : "aktif",
-        joinedAt: String(row["Tanggal Bergabung"] || row.joinedAt || new Date().toISOString().slice(0, 10)),
+        joinedAt: parseGasDate(row["Tanggal Bergabung"] || row.joinedAt || new Date().toISOString().slice(0, 10)),
         isDeleted,
         createdAt,
         updatedAt,
@@ -128,7 +161,7 @@ function normalizeRow(repoName: string, row: any): any {
     case "reports":
       return {
         id,
-        date: String(row.Tanggal || row.date || new Date().toISOString().slice(0, 10)),
+        date: parseGasDate(row.Tanggal || row.date || new Date().toISOString().slice(0, 10)),
         teacherId: String(row["ID Guru Dinilai"] || row.teacherId || ""),
         teacherName: String(row["Nama Guru Dinilai"] || row["Nama Penyetor"] || row.teacherName || ""),
         mustamiId: String(row["ID Mustami"] || row.mustamiId || ""),
@@ -367,8 +400,8 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
   if (!item) return {};
 
   const id = item.id;
-  const createdAt = item.createdAt || new Date().toISOString();
-  const updatedAt = item.updatedAt || new Date().toISOString();
+  const createdAt = formatDateDDMMYYYY(item.createdAt || new Date().toISOString());
+  const updatedAt = formatDateDDMMYYYY(item.updatedAt || new Date().toISOString());
   const statusDihapus = item.isDeleted ? "YA" : "TIDAK";
 
   switch (repoName) {
@@ -384,7 +417,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         "Level Target": item.level || "",
         "No HP": item.phone || "",
         Status: item.status || "aktif",
-        "Tanggal Bergabung": item.joinedAt || "",
+        "Tanggal Bergabung": formatDateDDMMYYYY(item.joinedAt),
         Password: item.password || "griya123",
         "Status Dihapus": statusDihapus,
         "Created At": createdAt,
@@ -394,7 +427,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
     case "reports":
       return {
         ID: id,
-        Tanggal: item.date || "",
+        Tanggal: formatDateDDMMYYYY(item.date),
         "ID Guru Dinilai": item.teacherId || "",
         "Nama Penyetor": item.teacherName || "",
         "ID Mustami": item.mustamiId || "",
@@ -423,8 +456,8 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         "Target Value": item.targetValue || 0,
         "Current Value": item.currentValue || 0,
         Satuan: item.unit || "Halaman",
-        "Tanggal Mulai": item.startDate || "",
-        "Tenggat (Due Date)": item.dueDate || "",
+        "Tanggal Mulai": formatDateDDMMYYYY(item.startDate),
+        "Tenggat (Due Date)": formatDateDDMMYYYY(item.dueDate),
         "Created By": item.createdBy || "",
         "Status Dihapus": statusDihapus,
         "Created At": createdAt,
@@ -439,7 +472,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         "Judul Pengingat": item.title || "",
         Pesan: item.message || "",
         Frekuensi: item.frequency || "",
-        "Tanggal Diingatkan": item.remindAt || "",
+        "Tanggal Diingatkan": formatDateDDMMYYYY(item.remindAt),
         "Status Selesai (Dismissed)": item.dismissed ? "YA" : "TIDAK",
         "Status Dihapus": statusDihapus,
         "Created At": createdAt,
@@ -512,7 +545,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         Deskripsi: item.description || "",
         Kategori: item.category || "",
         "Poin XP": item.points || 0,
-        "Tanggal Terbuka": item.unlockedAt || "",
+        "Tanggal Terbuka": formatDateDDMMYYYY(item.unlockedAt),
         "Status Dihapus": statusDihapus,
         "Created At": createdAt,
         "Updated At": updatedAt,

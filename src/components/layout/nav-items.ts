@@ -26,18 +26,19 @@ export function getPrimaryNav(role?: UserRole): NavItem[] {
       { label: "Dashboard", to: "/", icon: LayoutDashboard },
       { label: "Setoran", to: "/reports", icon: ClipboardList },
       { label: "Target", to: "/targets", icon: Target },
-      { label: "Lencana & XP", to: "/achievements", icon: Award },
+      { label: "Leaderboard & Lencana", to: "/achievements", icon: Award },
       { label: "Pengumuman", to: "/announcements", icon: Megaphone, badgeKey: "announcements" },
       { label: "Guru", to: "/teachers", icon: Users },
       { label: "Analitik", to: "/analytics", icon: BarChart3 },
     ];
   }
 
-  // Regular teacher navigation (Only Dashboard, Setoran, Target, Pengumuman)
+  // Regular teacher navigation (Dashboard, Setoran, Target, Leaderboard & Lencana, Pengumuman)
   return [
     { label: "Dashboard", to: "/", icon: LayoutDashboard },
     { label: "Setoran", to: "/reports", icon: ClipboardList },
     { label: "Target", to: "/targets", icon: Target },
+    { label: "Leaderboard & Lencana", to: "/achievements", icon: Award },
     { label: "Pengumuman", to: "/announcements", icon: Megaphone, badgeKey: "announcements" },
   ];
 }
@@ -64,17 +65,18 @@ export function getMobileNav(role?: UserRole): NavItem[] {
       { label: "Dashboard", to: "/", icon: LayoutDashboard },
       { label: "Setoran", to: "/reports", icon: ClipboardList },
       { label: "Target", to: "/targets", icon: Target },
+      { label: "Leaderboard & Lencana", to: "/achievements", icon: Award },
       { label: "Pengumuman", to: "/announcements", icon: Megaphone, badgeKey: "announcements" },
       { label: "Profil", to: "/profile", icon: UserRound },
     ];
   }
 
-  // Mobile Navbar for regular teachers: Dashboard, Setoran, Target, Pengumuman, Profil
+  // Mobile Navbar for regular teachers
   return [
     { label: "Dashboard", to: "/", icon: LayoutDashboard },
     { label: "Setoran", to: "/reports", icon: ClipboardList },
     { label: "Target", to: "/targets", icon: Target },
-    { label: "Pengumuman", to: "/announcements", icon: Megaphone, badgeKey: "announcements" },
+    { label: "Leaderboard & Lencana", to: "/achievements", icon: Award },
     { label: "Profil", to: "/profile", icon: UserRound },
   ];
 }

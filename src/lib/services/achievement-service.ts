@@ -13,12 +13,20 @@ export type AchievementDefinition = {
 
 export const masterAchievements: AchievementDefinition[] = [
   {
+    code: "UPGRADER_MASTER",
+    title: "Master Upgrader",
+    description: "Lencana Permanen Pengurus & Upgrader Lembaga Griya Huffazh Quran.",
+    category: "umum",
+    icon: "ShieldCheck",
+    points: 0,
+  },
+  {
     code: "ISTIQOMAH_5",
     title: "Pengajar Istiqomah",
     description: "Telah menyelesaikan minimal 5 setoran upgrading.",
     category: "setoran",
     icon: "BookCheck",
-    points: 100,
+    points: 0,
   },
   {
     code: "GRADE_A_STREAK",
@@ -26,7 +34,7 @@ export const masterAchievements: AchievementDefinition[] = [
     description: "Mendapatkan nilai A pada setoran hafalan.",
     category: "setoran",
     icon: "Award",
-    points: 150,
+    points: 0,
   },
   {
     code: "FIRST_TARGET",
@@ -34,7 +42,7 @@ export const masterAchievements: AchievementDefinition[] = [
     description: "Berhasil menyelesaikan 1 target upgrading.",
     category: "target",
     icon: "Target",
-    points: 200,
+    points: 0,
   },
   {
     code: "MUSTAMI_ACTIVE",
@@ -42,7 +50,7 @@ export const masterAchievements: AchievementDefinition[] = [
     description: "Aktif menyimak dan mencatat minimal 3 setoran pengajar lain.",
     category: "mustami",
     icon: "CheckCheck",
-    points: 180,
+    points: 0,
   },
   {
     code: "TAHSIN_SPECIALIST",
@@ -50,7 +58,7 @@ export const masterAchievements: AchievementDefinition[] = [
     description: "Menyelesaikan setoran materi Matn dengan nilai A.",
     category: "tahsin",
     icon: "Sparkles",
-    points: 220,
+    points: 0,
   },
   {
     code: "TARGET_MASTER",
@@ -58,7 +66,7 @@ export const masterAchievements: AchievementDefinition[] = [
     description: "Tuntas menyelesaikan 3 target upgrading lembaga.",
     category: "target",
     icon: "Trophy",
-    points: 350,
+    points: 0,
   },
 ];
 
@@ -126,11 +134,29 @@ export function calculateTeacherXpAndRank(
 }
 
 export function evaluateTeacherAchievements(teacherId: string): void {
+  const teacherObj = teacherRepo.get(teacherId);
   const reports = reportRepo.list().filter((r) => !r.isDeleted);
   const targets = targetRepo.list().filter((t) => !t.isDeleted);
   const existingAchievements = achievementRepo.list().filter((a) => a.teacherId === teacherId);
 
   const unlockedCodes = new Set(existingAchievements.map((a) => a.code));
+
+  if (teacherObj?.role === "upgrader" && !unlockedCodes.has("UPGRADER_MASTER")) {
+    const def = masterAchievements.find((m) => m.code === "UPGRADER_MASTER");
+    if (def) {
+      achievementRepo.create({
+        teacherId,
+        code: def.code,
+        title: def.title,
+        description: def.description,
+        category: def.category,
+        icon: def.icon,
+        points: 0,
+        unlockedAt: new Date().toISOString(),
+      });
+      unlockedCodes.add("UPGRADER_MASTER");
+    }
+  }
 
   const teacherReports = reports.filter((r) => r.teacherId === teacherId);
   const teacherTargets = targets.filter((t) => t.teacherId === teacherId);
