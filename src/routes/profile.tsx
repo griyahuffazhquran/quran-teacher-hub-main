@@ -292,7 +292,7 @@ function ProfilePage() {
 
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 animate-fade-up">
             {masterAchievements.map((def) => {
-              const unlockedObj = userAchievements.find((a) => a.code === def.code);
+              const unlockedObj = userAchievements.find((a) => a && a.code === def.code);
               const isUnlocked = !!unlockedObj;
 
               return (
@@ -338,7 +338,7 @@ function ProfilePage() {
                     <div className="pt-2 border-t border-border/50 text-[10px] text-muted-foreground flex items-center justify-between">
                       {isUnlocked ? (
                         <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                          <CheckCircle2 className="size-3" /> Terbuka {formatDate(unlockedObj.unlockedAt)}
+                          <CheckCircle2 className="size-3" /> Terbuka {formatDate(unlockedObj?.unlockedAt)}
                         </span>
                       ) : (
                         <span className="italic">Belum terbuka</span>

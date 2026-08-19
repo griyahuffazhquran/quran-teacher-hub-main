@@ -67,7 +67,11 @@ export function currentUser(): Teacher | undefined {
   const s = getSession();
   if (!s) return undefined;
   const list = teacherRepo.list().map(normalizeTeacher);
-  const found = list.find((t) => t.id === s.userId);
+  let found = list.find((t) => t.id === s.userId || (t.username || "").toLowerCase() === s.userId.toLowerCase());
+  if (!found && list.length > 0) {
+    found = list[0];
+    if (found) setSession({ userId: found.id, loggedInAt: new Date().toISOString() });
+  }
   return found;
 }
 

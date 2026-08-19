@@ -80,21 +80,25 @@ export const teacherRanks: TeacherRank[] = [
 
 export function calculateTeacherXpAndRank(
   teacherId: string,
-  reports: Report[],
-  targets: Target[],
-  achievements: Achievement[],
+  reports: Report[] = [],
+  targets: Target[] = [],
+  achievements: Achievement[] = [],
 ) {
-  const teacherReports = reports.filter((r) => r.teacherId === teacherId && !r.isDeleted);
-  const teacherTargets = targets.filter((t) => t.teacherId === teacherId && !t.isDeleted);
-  const teacherMustami = reports.filter((r) => r.mustamiId === teacherId && !r.isDeleted);
-  const unlockedAchievements = achievements.filter((a) => a.teacherId === teacherId && !a.isDeleted);
+  const safeReports = Array.isArray(reports) ? reports : [];
+  const safeTargets = Array.isArray(targets) ? targets : [];
+  const safeAchievements = Array.isArray(achievements) ? achievements : [];
+
+  const teacherReports = safeReports.filter((r) => r && r.teacherId === teacherId && !r.isDeleted);
+  const teacherTargets = safeTargets.filter((t) => t && t.teacherId === teacherId && !t.isDeleted);
+  const teacherMustami = safeReports.filter((r) => r && r.mustamiId === teacherId && !r.isDeleted);
+  const unlockedAchievements = safeAchievements.filter((a) => a && a.teacherId === teacherId && !a.isDeleted);
 
   // XP Breakdown calculation
   const setoranXp = teacherReports.length * 30; // 30 XP per setoran
-  const gradeBonusXp = teacherReports.filter((r) => r.grade === "A").length * 20; // +20 XP for Grade A
+  const gradeBonusXp = teacherReports.filter((r) => r && r.grade === "A").length * 20; // +20 XP for Grade A
   const mustamiXp = teacherMustami.length * 25; // 25 XP per assessment as mustami
-  const targetCompletedXp = teacherTargets.filter((t) => t.status === "tercapai").length * 100; // 100 XP per target
-  const achievementXp = unlockedAchievements.reduce((sum, a) => sum + (Number(a.points) || 0), 0);
+  const targetCompletedXp = teacherTargets.filter((t) => t && t.status === "tercapai").length * 100; // 100 XP per target
+  const achievementXp = unlockedAchievements.reduce((sum, a) => sum + (Number(a?.points) || 0), 0);
 
   const totalXp = setoranXp + gradeBonusXp + mustamiXp + targetCompletedXp + achievementXp;
 
@@ -128,7 +132,7 @@ export function calculateTeacherXpAndRank(
     progressPct,
     setoranCount: teacherReports.length,
     mustamiCount: teacherMustami.length,
-    completedTargetsCount: teacherTargets.filter((t) => t.status === "tercapai").length,
+    completedTargetsCount: teacherTargets.filter((t) => t && t.status === "tercapai").length,
     unlockedBadgesCount: unlockedAchievements.length,
   };
 }
@@ -145,9 +149,9 @@ export function evaluateTeacherAchievements(teacherId: string): void {
   recentEvaluations.set(teacherId, now);
 
   const teacherObj = teacherRepo.get(teacherId);
-  const reports = reportRepo.list().filter((r) => !r.isDeleted);
-  const targets = targetRepo.list().filter((t) => !t.isDeleted);
-  const existingAchievements = achievementRepo.list().filter((a) => a.teacherId === teacherId && !a.isDeleted);
+  const reports = reportRepo.list().filter((r) => r && !r.isDeleted);
+  const targets = targetRepo.list().filter((t) => t && !t.isDeleted);
+  const existingAchievements = achievementRepo.list().filter((a) => a && a.teacherId === teacherId && !a.isDeleted);
 
   const unlockedCodes = new Set(existingAchievements.map((a) => a.code));
 
