@@ -8,9 +8,6 @@ import {
   PanelLeftClose,
   X,
   Loader2,
-  CheckCircle2,
-  AlertTriangle,
-  Heart,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,9 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from "./ThemeToggle";
@@ -237,8 +231,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
-  const [logoutSuccessOpen, setLogoutSuccessOpen] = useState(false);
-  const [sessionExpiredOpen, setSessionExpiredOpen] = useState(false);
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
@@ -263,11 +255,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [ready, user, isUpgrader, pathname, navigate]);
 
-  // Item 7: 1-Hour Inactivity Auto-Logout Tracker
+  // Item 7: 2-Hour Inactivity Auto-Logout Tracker
   useEffect(() => {
     if (!ready || !user) return;
 
-    const INACTIVITY_LIMIT_MS = 3600000; // 1 hour
+    const INACTIVITY_LIMIT_MS = 7200000; // 2 hours
     let lastActivity = Date.now();
 
     const updateActivity = () => {
@@ -280,7 +272,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     const interval = setInterval(() => {
       if (Date.now() - lastActivity >= INACTIVITY_LIMIT_MS) {
         logout();
-        setSessionExpiredOpen(true);
+        void navigate({ to: "/session-expired" });
       }
     }, 30000); // Check every 30s
 
@@ -288,7 +280,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       events.forEach((ev) => window.removeEventListener(ev, updateActivity));
       clearInterval(interval);
     };
-  }, [ready, user]);
+  }, [ready, user, navigate]);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -311,18 +303,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     setTimeout(() => {
       logout();
       setLogoutLoading(false);
-      setLogoutSuccessOpen(true);
+      void navigate({ to: "/logout" });
     }, 800);
-  };
-
-  const handleLogoutConfirmDone = () => {
-    setLogoutSuccessOpen(false);
-    void navigate({ to: "/login" });
-  };
-
-  const handleSessionExpiredDone = () => {
-    setSessionExpiredOpen(false);
-    void navigate({ to: "/login" });
   };
 
   const mobileNavItems = getMobileNav(role);
@@ -473,7 +455,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               Konfirmasi Keluar Akun
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Apakah Anda yakin ingin keluar dari sistem Griya Huffazh Quran Hub?
+              Apakah Anda yakin ingin keluar dari sistem Griya Huffazh Quran Upgrading System?
             </p>
           </div>
 
@@ -498,57 +480,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       )}
-
-      {/* Item 12: Logout Success Modal ("Jazakumullahu Khairan") */}
-      <Dialog open={logoutSuccessOpen} onOpenChange={() => handleLogoutConfirmDone()}>
-        <DialogContent className="max-w-md text-center p-6 space-y-4">
-          <div className="mx-auto grid size-16 place-items-center rounded-full bg-primary/10 text-primary border border-primary/20">
-            <Heart className="size-8 text-primary animate-pulse" />
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="text-xl font-bold tracking-tight text-foreground font-serif">
-              Jazakumullahu Khairan wa Barakallahu Fikum
-            </h3>
-            <p className="text-base font-semibold text-primary">
-              Semangat selalu!
-            </p>
-            <p className="text-xs text-muted-foreground leading-relaxed pt-1">
-              Terima kasih atas dedikasi dan ikhtiar Anda dalam mendidik serta menyimak setoran Al-Qur'an.
-            </p>
-          </div>
-
-          <div className="pt-2">
-            <Button onClick={handleLogoutConfirmDone} className="w-full gap-2 shadow-md">
-              <span>Ke Halaman Login</span>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Item 7: Session Expired Modal (Inactivity Timeout) */}
-      <Dialog open={sessionExpiredOpen} onOpenChange={() => handleSessionExpiredDone()}>
-        <DialogContent className="max-w-md text-center p-6 space-y-4">
-          <div className="mx-auto grid size-16 place-items-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-            <AlertTriangle className="size-8" />
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="text-xl font-bold tracking-tight text-foreground">
-              Sesi Anda Telah Berakhir
-            </h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Demi keamanan akun, Anda telah otomatis keluar karena tidak ada aktivitas selama 1 jam. Silakan masuk kembali untuk melanjutkan.
-            </p>
-          </div>
-
-          <div className="pt-2">
-            <Button onClick={handleSessionExpiredDone} className="w-full gap-2 shadow-md">
-              <span>Masuk Kembali</span>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

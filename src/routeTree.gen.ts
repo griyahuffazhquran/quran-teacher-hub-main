@@ -14,9 +14,11 @@ import { Route as AchievementsRouteImport } from './routes/achievements'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LogoutRouteImport } from './routes/logout'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as SessionExpiredRouteImport } from './routes/session-expired'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TargetsRouteImport } from './routes/targets'
 import { Route as TeachersRouteImport } from './routes/teachers'
@@ -46,6 +48,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LogoutRoute = LogoutRouteImport.update({
+  id: '/logout',
+  path: '/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NotificationsRoute = NotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
@@ -59,6 +66,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SessionExpiredRoute = SessionExpiredRouteImport.update({
+  id: '/session-expired',
+  path: '/session-expired',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -83,9 +95,11 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/announcements': typeof AnnouncementsRoute
   '/login': typeof LoginRoute
+  '/logout': typeof LogoutRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
+  '/session-expired': typeof SessionExpiredRoute
   '/settings': typeof SettingsRoute
   '/targets': typeof TargetsRoute
   '/teachers': typeof TeachersRoute
@@ -96,9 +110,11 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/announcements': typeof AnnouncementsRoute
   '/login': typeof LoginRoute
+  '/logout': typeof LogoutRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
+  '/session-expired': typeof SessionExpiredRoute
   '/settings': typeof SettingsRoute
   '/targets': typeof TargetsRoute
   '/teachers': typeof TeachersRoute
@@ -110,9 +126,11 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/announcements': typeof AnnouncementsRoute
   '/login': typeof LoginRoute
+  '/logout': typeof LogoutRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
+  '/session-expired': typeof SessionExpiredRoute
   '/settings': typeof SettingsRoute
   '/targets': typeof TargetsRoute
   '/teachers': typeof TeachersRoute
@@ -125,9 +143,11 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/announcements'
     | '/login'
+    | '/logout'
     | '/notifications'
     | '/profile'
     | '/reports'
+    | '/session-expired'
     | '/settings'
     | '/targets'
     | '/teachers'
@@ -138,9 +158,11 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/announcements'
     | '/login'
+    | '/logout'
     | '/notifications'
     | '/profile'
     | '/reports'
+    | '/session-expired'
     | '/settings'
     | '/targets'
     | '/teachers'
@@ -151,9 +173,11 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/announcements'
     | '/login'
+    | '/logout'
     | '/notifications'
     | '/profile'
     | '/reports'
+    | '/session-expired'
     | '/settings'
     | '/targets'
     | '/teachers'
@@ -165,9 +189,11 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   AnnouncementsRoute: typeof AnnouncementsRoute
   LoginRoute: typeof LoginRoute
+  LogoutRoute: typeof LogoutRoute
   NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
   ReportsRoute: typeof ReportsRoute
+  SessionExpiredRoute: typeof SessionExpiredRoute
   SettingsRoute: typeof SettingsRoute
   TargetsRoute: typeof TargetsRoute
   TeachersRoute: typeof TeachersRoute
@@ -210,6 +236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/logout': {
+      id: '/logout'
+      path: '/logout'
+      fullPath: '/logout'
+      preLoaderRoute: typeof LogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/notifications': {
       id: '/notifications'
       path: '/notifications'
@@ -229,6 +262,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/session-expired': {
+      id: '/session-expired'
+      path: '/session-expired'
+      fullPath: '/session-expired'
+      preLoaderRoute: typeof SessionExpiredRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -261,9 +301,11 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   AnnouncementsRoute: AnnouncementsRoute,
   LoginRoute: LoginRoute,
+  LogoutRoute: LogoutRoute,
   NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,
   ReportsRoute: ReportsRoute,
+  SessionExpiredRoute: SessionExpiredRoute,
   SettingsRoute: SettingsRoute,
   TargetsRoute: TargetsRoute,
   TeachersRoute: TeachersRoute,
