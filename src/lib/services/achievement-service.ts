@@ -94,7 +94,7 @@ export function calculateTeacherXpAndRank(
   const gradeBonusXp = teacherReports.filter((r) => r.grade === "A").length * 20; // +20 XP for Grade A
   const mustamiXp = teacherMustami.length * 25; // 25 XP per assessment as mustami
   const targetCompletedXp = teacherTargets.filter((t) => t.status === "tercapai").length * 100; // 100 XP per target
-  const achievementXp = unlockedAchievements.reduce((sum, a) => sum + a.points, 0);
+  const achievementXp = unlockedAchievements.reduce((sum, a) => sum + (Number(a.points) || 0), 0);
 
   const totalXp = setoranXp + gradeBonusXp + mustamiXp + targetCompletedXp + achievementXp;
 
@@ -134,6 +134,7 @@ export function calculateTeacherXpAndRank(
 }
 
 export function evaluateTeacherAchievements(teacherId: string): void {
+  if (!teacherId) return;
   const teacherObj = teacherRepo.get(teacherId);
   const reports = reportRepo.list().filter((r) => !r.isDeleted);
   const targets = targetRepo.list().filter((t) => !t.isDeleted);
@@ -164,24 +165,29 @@ export function evaluateTeacherAchievements(teacherId: string): void {
 
   const newToUnlock: AchievementDefinition[] = [];
 
+  const pushIfFound = (code: string) => {
+    const found = masterAchievements.find((m) => m.code === code);
+    if (found) newToUnlock.push(found);
+  };
+
   // Check ISTIQOMAH_5
   if (!unlockedCodes.has("ISTIQOMAH_5") && teacherReports.length >= 5) {
-    newToUnlock.push(masterAchievements.find((m) => m.code === "ISTIQOMAH_5")!);
+    pushIfFound("ISTIQOMAH_5");
   }
 
   // Check GRADE_A_STREAK
   if (!unlockedCodes.has("GRADE_A_STREAK") && teacherReports.some((r) => r.grade === "A")) {
-    newToUnlock.push(masterAchievements.find((m) => m.code === "GRADE_A_STREAK")!);
+    pushIfFound("GRADE_A_STREAK");
   }
 
   // Check FIRST_TARGET
   if (!unlockedCodes.has("FIRST_TARGET") && teacherTargets.some((t) => t.status === "tercapai")) {
-    newToUnlock.push(masterAchievements.find((m) => m.code === "FIRST_TARGET")!);
+    pushIfFound("FIRST_TARGET");
   }
 
   // Check MUSTAMI_ACTIVE
   if (!unlockedCodes.has("MUSTAMI_ACTIVE") && teacherMustami.length >= 3) {
-    newToUnlock.push(masterAchievements.find((m) => m.code === "MUSTAMI_ACTIVE")!);
+    pushIfFound("MUSTAMI_ACTIVE");
   }
 
   // Check TAHSIN_SPECIALIST
@@ -189,7 +195,7 @@ export function evaluateTeacherAchievements(teacherId: string): void {
     !unlockedCodes.has("TAHSIN_SPECIALIST") &&
     teacherReports.some((r) => r.material === "matn" && r.grade === "A")
   ) {
-    newToUnlock.push(masterAchievements.find((m) => m.code === "TAHSIN_SPECIALIST")!);
+    pushIfFound("TAHSIN_SPECIALIST");
   }
 
   // Check TARGET_MASTER
@@ -197,11 +203,12 @@ export function evaluateTeacherAchievements(teacherId: string): void {
     !unlockedCodes.has("TARGET_MASTER") &&
     teacherTargets.filter((t) => t.status === "tercapai").length >= 3
   ) {
-    newToUnlock.push(masterAchievements.find((m) => m.code === "TARGET_MASTER")!);
+    pushIfFound("TARGET_MASTER");
   }
 
   // Award achievements
   for (const def of newToUnlock) {
+    if (!def) continue;
     const ach = achievementRepo.create({
       teacherId,
       code: def.code,
@@ -209,13 +216,13 @@ export function evaluateTeacherAchievements(teacherId: string): void {
       description: def.description,
       category: def.category,
       icon: def.icon,
-      points: def.points,
+      points: def.points || 0,
       unlockedAt: new Date().toISOString(),
     });
 
     notify({
       title: `Lencana Baru Terbuka! 🏆`,
-      body: `Selamat! Anda berhasil membuka lencana "${ach.title}" (+${ach.points} XP).`,
+      body: `Selamat! Anda berhasil membuka lencana "${ach.title}".`,
       level: "success",
       type: "ACHIEVEMENT_UNLOCKED",
       userId: teacherId,
@@ -224,7 +231,7 @@ export function evaluateTeacherAchievements(teacherId: string): void {
 
     logActivity({
       action: "ACHIEVEMENT_UNLOCKED",
-      description: `Lencana "${ach.title}" (+${ach.points} XP) terbuka.`,
+      description: `Lencana "${ach.title}" terbuka.`,
       actorId: teacherId,
       entity: "achievements",
       entityId: ach.id,
