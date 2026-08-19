@@ -1,17 +1,22 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { BookOpenText, CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { BookOpenText, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Send } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useSession } from "@/hooks/use-session";
 import { loginAsync } from "@/lib/services/auth-service";
+import { requestPasswordReset } from "@/lib/services/gas-api-service";
 import type { Teacher } from "@/lib/data/types";
 
 export const Route = createFileRoute("/login")({
@@ -37,6 +42,13 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [welcomeUser, setWelcomeUser] = useState<Teacher | null>(null);
 
+  // Forgot Password Modal State
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [resetUsername, setResetUsername] = useState("");
+  const [resetName, setResetName] = useState("");
+  const [resetPhone, setResetPhone] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+
   useEffect(() => {
     if (ready && user && !welcomeUser) void navigate({ to: "/" });
   }, [ready, user, navigate, welcomeUser]);
@@ -60,7 +72,6 @@ function LoginPage() {
       setLoading(false);
       setWelcomeUser(result.user);
 
-      // Auto navigate after 2.5 seconds
       setTimeout(() => {
         void navigate({ to: "/" });
       }, 2500);
@@ -80,6 +91,28 @@ function LoginPage() {
     handleLogin(username, password);
   };
 
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetUsername && !resetName) {
+      toast.error("Mohon isi Username atau Nama Lengkap Anda.");
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      await requestPasswordReset(resetUsername, resetName, resetPhone);
+      setResetLoading(false);
+      setForgotOpen(false);
+      toast.success("✅ Permintaan reset kata sandi berhasil dikirim! Data telah tercatat di spreadsheet pengurus.");
+      setResetUsername("");
+      setResetName("");
+      setResetPhone("");
+    } catch (err) {
+      setResetLoading(false);
+      toast.error("Gagal mengirim permintaan reset kata sandi.");
+    }
+  };
+
   const goToDashboard = () => {
     void navigate({ to: "/" });
   };
@@ -95,7 +128,6 @@ function LoginPage() {
       </div>
 
       <Card className="relative w-full max-w-sm overflow-hidden border-border/80 bg-card/90 backdrop-blur-xl shadow-xl animate-zoom-in">
-        {/* Loading Progress Bar at top of card */}
         {loading && (
           <div className="absolute top-0 inset-x-0 h-1 bg-primary/20 overflow-hidden">
             <div className="h-full bg-primary animate-pulse w-full origin-left" />
@@ -136,9 +168,18 @@ function LoginPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs font-semibold">
-                Password
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-xs font-semibold">
+                  Password
+                </Label>
+                <button
+                  type="button"
+                  onClick={() => setForgotOpen(true)}
+                  className="text-[11px] font-medium text-primary hover:underline"
+                >
+                  Lupa Kata Sandi?
+                </button>
+              </div>
               <div className="relative">
                 <Input
                   id="password"
@@ -175,6 +216,82 @@ function LoginPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Forgot Password Modal Dialog */}
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent className="max-w-md p-6 space-y-4">
+          <DialogHeader className="space-y-2 text-left">
+            <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <KeyRound className="size-5" />
+            </div>
+            <DialogTitle className="text-lg font-bold">Lupa Kata Sandi</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Kirimkan pengajuan reset kata sandi Anda. Data akan langsung dicatat ke Google Spreadsheet pengurus untuk ditindaklanjuti.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleForgotSubmit} className="space-y-3.5 pt-1">
+            <div className="space-y-1">
+              <Label htmlFor="reset-username" className="text-xs font-semibold">
+                Username Anda
+              </Label>
+              <Input
+                id="reset-username"
+                placeholder="Contoh: ustadz_rahman"
+                value={resetUsername}
+                onChange={(e) => setResetUsername(e.target.value)}
+                disabled={resetLoading}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="reset-name" className="text-xs font-semibold">
+                Nama Lengkap
+              </Label>
+              <Input
+                id="reset-name"
+                placeholder="Contoh: Ustadz Rahman Abdillah"
+                value={resetName}
+                onChange={(e) => setResetName(e.target.value)}
+                disabled={resetLoading}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="reset-phone" className="text-xs font-semibold">
+                No HP / WhatsApp (opsional)
+              </Label>
+              <Input
+                id="reset-phone"
+                placeholder="Contoh: 081234567890"
+                value={resetPhone}
+                onChange={(e) => setResetPhone(e.target.value)}
+                disabled={resetLoading}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setForgotOpen(false)}
+                disabled={resetLoading}
+                className="h-9 text-xs"
+              >
+                Batal
+              </Button>
+              <Button type="submit" disabled={resetLoading} className="h-9 text-xs gap-1.5 font-semibold">
+                {resetLoading ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Send className="size-3.5" />
+                )}
+                <span>Kirim Permintaan</span>
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Islamic Welcome Success Popup Dialog */}
       <Dialog open={!!welcomeUser} onOpenChange={() => goToDashboard()}>

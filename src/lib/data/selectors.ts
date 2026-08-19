@@ -51,6 +51,15 @@ export function activeReports(reports: Report[]): Report[] {
   return reports.filter((r) => !r.isDeleted);
 }
 
+export function activeTeachers(teachers: Teacher[]): Teacher[] {
+  return teachers.filter((t) => !t.isDeleted && t.status !== "nonaktif");
+}
+
+export function activeTargets(targets: Target[]): Target[] {
+  return targets.filter((t) => !t.isDeleted);
+}
+
+
 export function pendingHomework(reports: Report[]): Report[] {
   return reports.filter((r) => !r.homeworkDone && !!r.homework);
 }

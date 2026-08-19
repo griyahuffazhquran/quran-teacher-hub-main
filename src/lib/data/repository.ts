@@ -99,11 +99,20 @@ export function createRepository<T extends Base>(
       if (!hydrated && typeof window !== "undefined") {
         hydrate();
       }
-      const target = rows.find((r) => r.id === id);
-      rows = rows.filter((r) => r.id !== id);
-      persist();
-      if (target) {
-        void pushMutationToGas(name, "delete", target);
+      let updated: T | undefined;
+      rows = rows.map((r) => {
+        if (r.id !== id) return r;
+        updated = {
+          ...r,
+          isDeleted: true,
+          status: (r as any).status === "aktif" ? "nonaktif" : (r as any).status,
+          updatedAt: nowISO(),
+        } as T;
+        return updated;
+      });
+      if (updated) {
+        persist();
+        void pushMutationToGas(name, "delete", updated);
       }
     },
     replaceAll: (next) => {

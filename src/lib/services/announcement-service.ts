@@ -16,6 +16,7 @@ export function listAnnouncements(
 ): Announcement[] {
   return [...announcements]
     .filter((a) => {
+      if (a.isDeleted) return false;
       if (!userRole) return true;
       if (a.audience === "all") return true;
       if (a.audience === "teachers" && userRole === "teacher") return true;
@@ -31,6 +32,7 @@ export function listAnnouncements(
 export function hasActiveDeadlineAnnouncements(announcements: Announcement[]): boolean {
   const today = new Date().toISOString().slice(0, 10);
   return announcements.some((a) => {
+    if (a.isDeleted) return false;
     if (a.pinned) return true;
     if (a.dueDate) {
       return a.dueDate >= today;

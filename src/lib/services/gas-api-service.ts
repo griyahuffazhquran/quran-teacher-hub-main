@@ -103,6 +103,7 @@ function normalizeRow(repoName: string, row: any): any {
   const id = String(rawId).trim();
   const createdAt = String(row["Created At"] || row.createdAt || new Date().toISOString());
   const updatedAt = String(row["Updated At"] || row.updatedAt || new Date().toISOString());
+  const isDeleted = String(row["Status Dihapus"] || row.isDeleted || "").toUpperCase() === "YA" || Boolean(row.isDeleted);
 
   switch (repoName) {
     case "teachers":
@@ -119,6 +120,7 @@ function normalizeRow(repoName: string, row: any): any {
         phone: String(row["No HP"] || row.phone || ""),
         status: (row.Status || row.status || "aktif") === "nonaktif" ? "nonaktif" : "aktif",
         joinedAt: String(row["Tanggal Bergabung"] || row.joinedAt || new Date().toISOString().slice(0, 10)),
+        isDeleted,
         createdAt,
         updatedAt,
       };
@@ -139,7 +141,7 @@ function normalizeRow(repoName: string, row: any): any {
         homeworkDone: String(row["Status PR"] || row.homeworkDone).includes("Selesai") || Boolean(row.homeworkDone),
         mustamiNote: String(row["Catatan Mustami"] || row.mustamiNote || ""),
         status: String(row["Status Laporan"] || row.status || "verified"),
-        isDeleted: Boolean(row.isDeleted),
+        isDeleted,
         createdAt,
         updatedAt,
       };
@@ -159,7 +161,7 @@ function normalizeRow(repoName: string, row: any): any {
         startDate: String(row["Tanggal Mulai"] || row.startDate || new Date().toISOString().slice(0, 10)),
         dueDate: String(row["Tenggat (Due Date)"] || row.dueDate || new Date().toISOString().slice(0, 10)),
         createdBy: String(row["Created By"] || row.createdBy || ""),
-        isDeleted: Boolean(row.isDeleted),
+        isDeleted,
         createdAt,
         updatedAt,
       };
@@ -174,6 +176,7 @@ function normalizeRow(repoName: string, row: any): any {
         frequency: String(row.Frekuensi || row.frequency || "mingguan"),
         remindAt: String(row["Tanggal Diingatkan"] || row.remindAt || new Date().toISOString().slice(0, 10)),
         dismissed: String(row["Status Selesai (Dismissed)"] || row.dismissed).toUpperCase() === "YA" || Boolean(row.dismissed),
+        isDeleted,
         createdAt,
         updatedAt,
       };
@@ -187,6 +190,7 @@ function normalizeRow(repoName: string, row: any): any {
         authorRole: String(row["Role Penulis"] || row.authorRole || "upgrader"),
         type: String(row["Tipe Feedback"] || row.type || "praise"),
         content: String(row["Isi Evaluasi/Feedback"] || row.content || ""),
+        isDeleted,
         createdAt,
         updatedAt,
       };
@@ -199,6 +203,7 @@ function normalizeRow(repoName: string, row: any): any {
         authorName: String(row["Nama Penulis"] || row.authorName || ""),
         authorRole: String(row["Role Penulis"] || row.authorRole || "teacher"),
         content: String(row["Isi Komentar"] || row.content || ""),
+        isDeleted,
         createdAt,
         updatedAt,
       };
@@ -212,6 +217,7 @@ function normalizeRow(repoName: string, row: any): any {
         authorName: String(row["Nama Penulis"] || row.authorName || ""),
         pinned: String(row["Pin Status"] || row.pinned).toUpperCase() === "YA" || Boolean(row.pinned),
         audience: String(row["Audien Target"] || row.audience || "all"),
+        isDeleted,
         createdAt,
         updatedAt,
       };
@@ -227,6 +233,7 @@ function normalizeRow(repoName: string, row: any): any {
         userId: row["User ID Target"] || row.userId,
         reportId: row["Report ID"] || row.reportId,
         targetId: row["Target ID"] || row.targetId,
+        isDeleted,
         createdAt,
         updatedAt,
       };
@@ -241,6 +248,7 @@ function normalizeRow(repoName: string, row: any): any {
         category: String(row.Kategori || row.category || "tahfizh"),
         points: Number(row["Poin XP"] || row.points || 0),
         unlockedAt: String(row["Tanggal Terbuka"] || row.unlockedAt || new Date().toISOString().slice(0, 10)),
+        isDeleted,
         createdAt,
         updatedAt,
       };
@@ -254,12 +262,13 @@ function normalizeRow(repoName: string, row: any): any {
         actorName: String(row["Nama Aktor"] || row.actorName || ""),
         entity: String(row["Entitas Target"] || row.entity || ""),
         entityId: String(row["ID Entitas Target"] || row.entityId || ""),
+        isDeleted,
         createdAt,
         updatedAt,
       };
 
     default:
-      return { ...row, id, createdAt, updatedAt };
+      return { ...row, id, isDeleted, createdAt, updatedAt };
   }
 }
 
@@ -360,6 +369,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
   const id = item.id;
   const createdAt = item.createdAt || new Date().toISOString();
   const updatedAt = item.updatedAt || new Date().toISOString();
+  const statusDihapus = item.isDeleted ? "YA" : "TIDAK";
 
   switch (repoName) {
     case "teachers":
@@ -376,6 +386,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         Status: item.status || "aktif",
         "Tanggal Bergabung": item.joinedAt || "",
         Password: item.password || "griya123",
+        "Status Dihapus": statusDihapus,
         "Created At": createdAt,
         "Updated At": updatedAt,
       };
@@ -396,6 +407,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         "Status PR": item.homework ? (item.homeworkDone ? "PR Selesai" : "PR Belum Selesai") : "Tidak Ada PR",
         "Catatan Mustami": item.mustamiNote || "",
         "Status Laporan": item.status || "verified",
+        "Status Dihapus": statusDihapus,
         "Created At": createdAt,
         "Updated At": updatedAt,
       };
@@ -414,6 +426,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         "Tanggal Mulai": item.startDate || "",
         "Tenggat (Due Date)": item.dueDate || "",
         "Created By": item.createdBy || "",
+        "Status Dihapus": statusDihapus,
         "Created At": createdAt,
         "Updated At": updatedAt,
       };
@@ -428,6 +441,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         Frekuensi: item.frequency || "",
         "Tanggal Diingatkan": item.remindAt || "",
         "Status Selesai (Dismissed)": item.dismissed ? "YA" : "TIDAK",
+        "Status Dihapus": statusDihapus,
         "Created At": createdAt,
         "Updated At": updatedAt,
       };
@@ -441,6 +455,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         "Role Penulis": item.authorRole || "",
         "Tipe Feedback": item.type || "",
         "Isi Evaluasi/Feedback": item.content || "",
+        "Status Dihapus": statusDihapus,
         "Created At": createdAt,
         "Updated At": updatedAt,
       };
@@ -453,6 +468,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         "Nama Penulis": item.authorName || "",
         "Role Penulis": item.authorRole || "",
         "Isi Komentar": item.content || "",
+        "Status Dihapus": statusDihapus,
         "Created At": createdAt,
         "Updated At": updatedAt,
       };
@@ -466,6 +482,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         "Nama Penulis": item.authorName || "",
         "Pin Status": item.pinned ? "YA" : "TIDAK",
         "Audien Target": item.audience || "all",
+        "Status Dihapus": statusDihapus,
         "Created At": createdAt,
         "Updated At": updatedAt,
       };
@@ -481,6 +498,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         "User ID Target": item.userId || "",
         "Report ID": item.reportId || "",
         "Target ID": item.targetId || "",
+        "Status Dihapus": statusDihapus,
         "Created At": createdAt,
         "Updated At": updatedAt,
       };
@@ -495,6 +513,7 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         Kategori: item.category || "",
         "Poin XP": item.points || 0,
         "Tanggal Terbuka": item.unlockedAt || "",
+        "Status Dihapus": statusDihapus,
         "Created At": createdAt,
         "Updated At": updatedAt,
       };
@@ -508,12 +527,13 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         "Nama Aktor": item.actorName || "",
         "Entitas Target": item.entity || "",
         "ID Entitas Target": item.entityId || "",
+        "Status Dihapus": statusDihapus,
         "Created At": createdAt,
         "Updated At": updatedAt,
       };
 
     default:
-      return { ID: id, ...item, "Created At": createdAt, "Updated At": updatedAt };
+      return { ID: id, ...item, "Status Dihapus": statusDihapus, "Created At": createdAt, "Updated At": updatedAt };
   }
 }
 
@@ -611,4 +631,18 @@ export async function pushMutationToGas(
   } catch (err) {
     console.warn(`[GAS Sync Error] Failed pushing ${repoName}:`, err);
   }
+}
+
+/** Request password reset to Google Apps Script (writes to passwordResets sheet) */
+export async function requestPasswordReset(username: string, name: string, phone: string): Promise<GasResponse> {
+  if (!isGasApiConfigured()) {
+    return { ok: false, error: "API Google Apps Script belum dikonfigurasi." };
+  }
+  return postToGas("requestPasswordReset", {
+    username,
+    name,
+    phone,
+    requestedAt: new Date().toISOString(),
+    status: "Pending",
+  });
 }

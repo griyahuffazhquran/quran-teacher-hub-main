@@ -11,7 +11,7 @@
  * 5. Pilih Select type: Web App.
  * 6. Execute as: Me (Email Anda).
  * 7. Who has access: Anyone (Siapa Saja). -> WAJIB 'Anyone' agar tidak kena CORS / HTML Error!
- * 8. Klik Deploy, lalu Salin Web App URL yang dihasilkan dan simpan di Pengaturan Aplikasi.
+ * 8. Klik Deploy, lalu Salin Web App URL yang dihasilkan.
  * ============================================================================
  */
 
@@ -56,6 +56,10 @@ function doPost(e) {
 
     if (!action) {
       return jsonResponse({ ok: false, error: "Action wajib diisi pada payload POST." });
+    }
+
+    if (action === "requestPasswordReset") {
+      return jsonResponse(requestPasswordReset(data));
     }
 
     // Single item mutations
@@ -121,7 +125,6 @@ function addRowPreventDuplicates(sheetName, data) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(sheetName);
 
-  // Auto create sheet if missing
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
   }
@@ -136,7 +139,12 @@ function addRowPreventDuplicates(sheetName, data) {
     sheet.appendRow(headers);
   }
 
-  // Check if any key in data is not in headers -> add new column to headers
+  // Ensure "Status Dihapus" is present in headers
+  if (headers.indexOf("Status Dihapus") === -1) {
+    headers.push("Status Dihapus");
+    sheet.getRange(1, headers.length).setValue("Status Dihapus");
+  }
+
   for (var k in data) {
     if (headers.indexOf(k) === -1) {
       headers.push(k);
@@ -152,15 +160,16 @@ function addRowPreventDuplicates(sheetName, data) {
     if (idColIdx !== -1) {
       for (var r = 1; r < values.length; r++) {
         if (String(values[r][idColIdx]).trim() === targetId) {
-          // Row already exists! Update row instead of appending duplicate!
           return updateRowById(sheetName, targetId, data);
         }
       }
     }
   }
 
-  // Construct row in header order
   var rowData = headers.map(function (h) {
+    if (h === "Status Dihapus") {
+      return data[h] !== undefined ? data[h] : "TIDAK";
+    }
     return data[h] !== undefined ? data[h] : "";
   });
 
@@ -198,10 +207,10 @@ function updateRowById(sheetName, id, data) {
     }
   }
 
-  // If not found, fall back to add
   return addRowPreventDuplicates(sheetName, data);
 }
 
+/** Soft-delete row by setting 'Status Dihapus' = 'YA' without deleting row physically */
 function deleteRowById(sheetName, id) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(sheetName);
@@ -215,15 +224,52 @@ function deleteRowById(sheetName, id) {
   if (idColIdx === -1) idColIdx = headers.indexOf("id");
   if (idColIdx === -1) return { ok: false, error: "Kolom ID tidak ditemukan." };
 
+  var deletedColIdx = headers.indexOf("Status Dihapus");
+  if (deletedColIdx === -1) {
+    headers.push("Status Dihapus");
+    sheet.getRange(1, headers.length).setValue("Status Dihapus");
+    deletedColIdx = headers.length - 1;
+  }
+
   var targetId = String(id).trim();
 
-  for (var r = values.length - 1; r >= 1; r--) {
+  for (var r = 1; r < values.length; r++) {
     if (String(values[r][idColIdx]).trim() === targetId) {
-      sheet.deleteRow(r + 1);
+      sheet.getRange(r + 1, deletedColIdx + 1).setValue("YA");
+
+      if (sheetName === "teachers") {
+        var statusColIdx = headers.indexOf("Status");
+        if (statusColIdx !== -1) {
+          sheet.getRange(r + 1, statusColIdx + 1).setValue("nonaktif");
+        }
+      }
+
+      return { ok: true, message: "Row " + targetId + " ditandai sebagai dihapus (soft delete)." };
     }
   }
 
-  return { ok: true, message: "Row " + targetId + " deleted successfully." };
+  return { ok: true, message: "Row " + targetId + " ditandai sebagai dihapus." };
+}
+
+function requestPasswordReset(data) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("passwordResets");
+  if (!sheet) {
+    sheet = ss.insertSheet("passwordResets");
+    sheet.appendRow(["ID", "Username", "Nama Guru", "No HP", "Tanggal Pengajuan", "Status"]);
+  }
+
+  var id = "reset_" + new Date().getTime();
+  var rowData = [
+    id,
+    data.username || "",
+    data.name || "",
+    data.phone || "",
+    data.requestedAt || new Date().toISOString(),
+    data.status || "Pending"
+  ];
+  sheet.appendRow(rowData);
+  return { ok: true, message: "Permintaan reset password berhasil dicatat." };
 }
 
 function jsonResponse(obj) {

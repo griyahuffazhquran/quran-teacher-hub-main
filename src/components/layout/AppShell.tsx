@@ -298,14 +298,21 @@ export function AppShell({ children }: { children: ReactNode }) {
     });
   };
 
-  // Item 12: Logout with loading animation and "Jazakumullahu Khairan" popup
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+
+  // Trigger logout confirm dialog first
   const handleLogoutClick = () => {
+    setLogoutConfirmOpen(true);
+  };
+
+  const executeLogout = () => {
+    setLogoutConfirmOpen(false);
     setLogoutLoading(true);
     setTimeout(() => {
       logout();
       setLogoutLoading(false);
       setLogoutSuccessOpen(true);
-    }, 900);
+    }, 800);
   };
 
   const handleLogoutConfirmDone = () => {
@@ -453,6 +460,34 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </ul>
       </nav>
+
+      {/* Logout Confirmation Dialog (Ya / Tidak) */}
+      <Dialog open={logoutConfirmOpen} onOpenChange={setLogoutConfirmOpen}>
+        <DialogContent className="max-w-md text-center p-6 space-y-4">
+          <div className="mx-auto grid size-14 place-items-center rounded-full bg-destructive/10 text-destructive border border-destructive/20">
+            <LogOut className="size-6" />
+          </div>
+
+          <div className="space-y-1.5">
+            <h3 className="text-lg font-bold tracking-tight text-foreground">
+              Konfirmasi Keluar Akun
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Apakah Anda yakin ingin keluar dari sistem Griya Huffazh Quran Hub?
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setLogoutConfirmOpen(false)} className="h-9 text-xs">
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={executeLogout} className="h-9 text-xs font-semibold gap-1.5">
+              <LogOut className="size-3.5" />
+              <span>Ya, Keluar</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Logout Loading Overlay */}
       {logoutLoading && (
