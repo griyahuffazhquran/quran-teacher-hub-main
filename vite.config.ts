@@ -17,5 +17,19 @@ export default defineConfig({
   // so the preset is respected by the build.
   nitro: {
     preset: "netlify",
+    externals: {
+      external: ["@aws-sdk/client-s3"],
+      inline: ["qrcode-terminal"],
+    },
+  },
+  vite: {
+    build: {
+      rollupOptions: {
+        external: ["@aws-sdk/client-s3"],
+      },
+      rolldownOptions: {
+        external: ["@aws-sdk/client-s3"],
+      },
+    },
   },
 });

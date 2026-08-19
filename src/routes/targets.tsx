@@ -142,9 +142,14 @@ function Page() {
     setFormDialogOpen(true);
   };
 
-  const handleDelete = (target: Target) => {
-    softDeleteTarget(target.id, user?.id);
-    toast.success("Target berhasil dihapus.");
+  const handleDelete = (target: Target, mode: "permanent" | "soft" = "permanent") => {
+    if (mode === "permanent") {
+      targetRepo.remove(target.id);
+      toast.success("Target berhasil dihapus permanen (clear database).");
+    } else {
+      softDeleteTarget(target.id, user?.id);
+      toast.success("Target diarsipkan.");
+    }
     if (selectedTarget?.id === target.id) {
       setDetailDrawerOpen(false);
       setSelectedTarget(null);

@@ -210,22 +210,33 @@ function Page() {
                 return (
                   <Card
                     key={n.id}
-                    className={`transition-all hover:border-primary/40 cursor-pointer group ${
-                      n.read ? "opacity-75 bg-card" : "bg-card/90 border-primary/30 shadow-2xs"
+                    className={`relative overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:shadow-lg cursor-pointer group ${
+                      n.read
+                        ? "opacity-75 bg-card hover:bg-card/90"
+                        : "bg-card/95 border-primary/40 shadow-sm ring-1 ring-primary/20"
                     }`}
                     onClick={() => handleNotificationClick(n)}
                   >
-                    <CardContent className="flex items-start gap-3 p-3.5">
+                    {!n.read && (
+                      <div className="absolute top-0 left-0 bottom-0 w-1 bg-primary animate-pulse" />
+                    )}
+                    <CardContent className="flex items-start gap-3 p-3.5 pl-4">
                       {/* Icon */}
-                      <div className={`grid size-9 shrink-0 place-items-center rounded-xl ${iconInfo.color}`}>
+                      <div className={`grid size-9 shrink-0 place-items-center rounded-xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 ${iconInfo.color}`}>
                         <IconComp className="size-4" />
                       </div>
 
                       {/* Content */}
                       <div className="min-w-0 flex-1 space-y-0.5">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="font-semibold text-xs text-foreground group-hover:text-primary transition-colors">
+                          <p className="font-semibold text-xs text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5">
                             {n.title}
+                            {!n.read && (
+                              <span className="relative flex size-2">
+                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
+                                <span className="relative inline-flex size-2 rounded-full bg-primary"></span>
+                              </span>
+                            )}
                           </p>
                           <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                             {new Date(n.createdAt).toLocaleDateString("id-ID", {

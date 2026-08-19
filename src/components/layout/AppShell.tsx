@@ -166,7 +166,7 @@ function SidebarNav({
               key={item.to}
               item={item}
               collapsed={collapsed}
-              hasBadge={item.badgeKey === "announcements" && hasAnnouncementBadge}
+              hasBadge={item.badgeKey === "announcements" ? Boolean(hasAnnouncementBadge) : false}
               onNavigate={onNavigate}
             />
           ))}

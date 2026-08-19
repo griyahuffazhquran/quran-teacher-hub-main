@@ -128,6 +128,7 @@ function normalizeRow(repoName: string, row: any): any {
         id,
         date: String(row.Tanggal || row.date || new Date().toISOString().slice(0, 10)),
         teacherId: String(row["ID Guru Dinilai"] || row.teacherId || ""),
+        teacherName: String(row["Nama Guru Dinilai"] || row["Nama Penyetor"] || row.teacherName || ""),
         mustamiId: String(row["ID Mustami"] || row.mustamiId || ""),
         mustamiName: String(row["Nama Mustami"] || row.mustamiName || ""),
         material: String(row.Materi || row.material || "tahfizh"),
@@ -352,7 +353,7 @@ export async function loginWithGas(
   return { ok: false, error: res.error || "Gagal login ke Google Apps Script." };
 }
 
-/** Format item row with mapped Indonesian & camelCase keys for Google Sheets */
+/** Format item row with mapped Indonesian keys for Google Sheets */
 export function toGasRow(repoName: string, item: any): Record<string, any> {
   if (!item) return {};
 
@@ -364,266 +365,155 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
     case "teachers":
       return {
         ID: id,
-        id,
         "Nama Guru": item.name || "",
-        name: item.name || "",
         Username: item.username || "",
-        username: item.username || "",
         Gender: item.gender || "ustadz",
-        gender: item.gender || "ustadz",
         Role: item.role || "teacher",
-        role: item.role || "teacher",
         Jabatan: item.position || "",
-        position: item.position || "",
         Spesialisasi: item.specialization || "",
-        specialization: item.specialization || "",
         "Level Target": item.level || "",
-        level: item.level || "",
         "No HP": item.phone || "",
-        phone: item.phone || "",
         Status: item.status || "aktif",
-        status: item.status || "aktif",
         "Tanggal Bergabung": item.joinedAt || "",
-        joinedAt: item.joinedAt || "",
-        "Created At": createdAt,
-        createdAt,
-        "Updated At": updatedAt,
-        updatedAt,
         Password: item.password || "griya123",
-        password: item.password || "griya123",
+        "Created At": createdAt,
+        "Updated At": updatedAt,
       };
 
     case "reports":
       return {
         ID: id,
-        id,
         Tanggal: item.date || "",
-        date: item.date || "",
         "ID Guru Dinilai": item.teacherId || "",
-        teacherId: item.teacherId || "",
-        "Nama Guru Dinilai": item.teacherName || "",
+        "Nama Penyetor": item.teacherName || "",
         "ID Mustami": item.mustamiId || "",
-        mustamiId: item.mustamiId || "",
         "Nama Mustami": item.mustamiName || "",
-        mustamiName: item.mustamiName || "",
         Materi: item.material || "",
-        material: item.material || "",
         "Rincian Materi": item.materialDetail || "",
-        materialDetail: item.materialDetail || "",
         "Referensi Ayat/Halaman": item.reference || "",
-        reference: item.reference || "",
         "Nilai Grade": parseGrade(item.grade),
-        grade: parseGrade(item.grade),
         "PR/Tugas": item.homework || "",
-        homework: item.homework || "",
         "Status PR": item.homework ? (item.homeworkDone ? "PR Selesai" : "PR Belum Selesai") : "Tidak Ada PR",
-        homeworkDone: Boolean(item.homeworkDone),
         "Catatan Mustami": item.mustamiNote || "",
-        mustamiNote: item.mustamiNote || "",
         "Status Laporan": item.status || "verified",
-        status: item.status || "verified",
-        isDeleted: Boolean(item.isDeleted),
         "Created At": createdAt,
-        createdAt,
         "Updated At": updatedAt,
-        updatedAt,
       };
 
     case "targets":
       return {
         ID: id,
-        id,
         "ID Guru": item.teacherId || "",
-        teacherId: item.teacherId || "",
         "Judul Target": item.title || "",
-        title: item.title || "",
         Deskripsi: item.description || "",
-        description: item.description || "",
         Periode: item.period || "",
-        period: item.period || "",
         Status: item.status || "",
-        status: item.status || "",
         "Target Value": item.targetValue || 0,
-        targetValue: item.targetValue || 0,
         "Current Value": item.currentValue || 0,
-        currentValue: item.currentValue || 0,
         Satuan: item.unit || "Halaman",
-        unit: item.unit || "Halaman",
         "Tanggal Mulai": item.startDate || "",
-        startDate: item.startDate || "",
         "Tenggat (Due Date)": item.dueDate || "",
-        dueDate: item.dueDate || "",
         "Created By": item.createdBy || "",
-        createdBy: item.createdBy || "",
-        isDeleted: Boolean(item.isDeleted),
         "Created At": createdAt,
-        createdAt,
         "Updated At": updatedAt,
-        updatedAt,
       };
 
     case "reminders":
       return {
         ID: id,
-        id,
         "ID Target": item.targetId || "",
-        targetId: item.targetId || "",
         "ID Guru": item.teacherId || "",
-        teacherId: item.teacherId || "",
         "Judul Pengingat": item.title || "",
-        title: item.title || "",
         Pesan: item.message || "",
-        message: item.message || "",
         Frekuensi: item.frequency || "",
-        frequency: item.frequency || "",
         "Tanggal Diingatkan": item.remindAt || "",
-        remindAt: item.remindAt || "",
         "Status Selesai (Dismissed)": item.dismissed ? "YA" : "TIDAK",
-        dismissed: Boolean(item.dismissed),
         "Created At": createdAt,
-        createdAt,
         "Updated At": updatedAt,
-        updatedAt,
       };
 
     case "feedbacks":
       return {
         ID: id,
-        id,
         "ID Setoran/Report": item.reportId || "",
-        reportId: item.reportId || "",
         "ID Penulis": item.authorId || "",
-        authorId: item.authorId || "",
         "Nama Penulis": item.authorName || "",
-        authorName: item.authorName || "",
         "Role Penulis": item.authorRole || "",
-        authorRole: item.authorRole || "",
         "Tipe Feedback": item.type || "",
-        type: item.type || "",
         "Isi Evaluasi/Feedback": item.content || "",
-        content: item.content || "",
         "Created At": createdAt,
-        createdAt,
         "Updated At": updatedAt,
-        updatedAt,
       };
 
     case "comments":
       return {
         ID: id,
-        id,
         "ID Setoran/Report": item.reportId || "",
-        reportId: item.reportId || "",
         "ID Penulis": item.authorId || "",
-        authorId: item.authorId || "",
         "Nama Penulis": item.authorName || "",
-        authorName: item.authorName || "",
         "Role Penulis": item.authorRole || "",
-        authorRole: item.authorRole || "",
         "Isi Komentar": item.content || "",
-        content: item.content || "",
         "Created At": createdAt,
-        createdAt,
         "Updated At": updatedAt,
-        updatedAt,
       };
 
     case "announcements":
       return {
         ID: id,
-        id,
         "Judul Pengumuman": item.title || "",
-        title: item.title || "",
         "Isi Pengumuman": item.content || "",
-        content: item.content || "",
         "ID Penulis": item.authorId || "",
-        authorId: item.authorId || "",
         "Nama Penulis": item.authorName || "",
-        authorName: item.authorName || "",
         "Pin Status": item.pinned ? "YA" : "TIDAK",
-        pinned: Boolean(item.pinned),
         "Audien Target": item.audience || "all",
-        audience: item.audience || "all",
         "Created At": createdAt,
-        createdAt,
         "Updated At": updatedAt,
-        updatedAt,
       };
 
     case "notifications":
       return {
         ID: id,
-        id,
         Judul: item.title || "",
-        title: item.title || "",
         "Pesan/Body": item.body || "",
-        body: item.body || "",
         Level: item.level || "info",
-        level: item.level || "info",
         "Status Dibaca": item.read ? "YA" : "TIDAK",
-        read: Boolean(item.read),
         "Tipe Notifikasi": item.type || "",
-        type: item.type || "",
         "User ID Target": item.userId || "",
-        userId: item.userId || "",
         "Report ID": item.reportId || "",
-        reportId: item.reportId || "",
         "Target ID": item.targetId || "",
-        targetId: item.targetId || "",
         "Created At": createdAt,
-        createdAt,
         "Updated At": updatedAt,
-        updatedAt,
       };
 
     case "achievements":
       return {
         ID: id,
-        id,
         "ID Guru": item.teacherId || "",
-        teacherId: item.teacherId || "",
         "Kode Lencana": item.code || "",
-        code: item.code || "",
         "Judul Lencana": item.title || "",
-        title: item.title || "",
         Deskripsi: item.description || "",
-        description: item.description || "",
         Kategori: item.category || "",
-        category: item.category || "",
         "Poin XP": item.points || 0,
-        points: item.points || 0,
         "Tanggal Terbuka": item.unlockedAt || "",
-        unlockedAt: item.unlockedAt || "",
         "Created At": createdAt,
-        createdAt,
         "Updated At": updatedAt,
-        updatedAt,
       };
 
     case "activityLogs":
       return {
         ID: id,
-        id,
         "Aksi (Action)": item.action || "",
-        action: item.action || "",
         "Deskripsi Aktivitas": item.description || "",
-        description: item.description || "",
         "ID Aktor": item.actorId || "",
-        actorId: item.actorId || "",
         "Nama Aktor": item.actorName || "",
-        actorName: item.actorName || "",
         "Entitas Target": item.entity || "",
-        entity: item.entity || "",
         "ID Entitas Target": item.entityId || "",
-        entityId: item.entityId || "",
         "Created At": createdAt,
-        createdAt,
         "Updated At": updatedAt,
-        updatedAt,
       };
 
     default:
-      return { ID: id, id, ...item, "Created At": createdAt, "Updated At": updatedAt };
+      return { ID: id, ...item, "Created At": createdAt, "Updated At": updatedAt };
   }
 }
 

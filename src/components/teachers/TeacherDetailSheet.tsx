@@ -22,11 +22,13 @@ export function TeacherDetailSheet({
   reports,
   onOpenChange,
   onEdit,
+  onDelete,
 }: {
   teacher: Teacher | null;
   reports: Report[];
   onOpenChange: (v: boolean) => void;
   onEdit: (t: Teacher) => void;
+  onDelete?: (t: Teacher) => void;
 }) {
   const { rows: targets } = useCollection(targetRepo);
   const { rows: achievements } = useCollection(achievementRepo);
@@ -86,9 +88,22 @@ export function TeacherDetailSheet({
                   <Row label="Total XP Gamifikasi" value={`${gamification.totalXp} XP`} />
                 )}
               </dl>
-              <Button className="w-full" onClick={() => onEdit(teacher!)}>
-                Edit Data
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button className="flex-1" variant="outline" onClick={() => onEdit(teacher!)}>
+                  Edit Data
+                </Button>
+                {onDelete && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      onOpenChange(false);
+                      onDelete(teacher!);
+                    }}
+                  >
+                    Hapus
+                  </Button>
+                )}
+              </div>
             </div>
           </>
         )}

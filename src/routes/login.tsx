@@ -47,8 +47,13 @@ function LoginPage() {
 
     try {
       const result = await loginAsync(u, p);
-      if (!result.ok || !result.user) {
+      if (!result.ok) {
         setError(result.error || "Gagal masuk.");
+        setLoading(false);
+        return;
+      }
+      if (!result.user) {
+        setError("Gagal masuk.");
         setLoading(false);
         return;
       }

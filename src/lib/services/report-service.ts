@@ -55,12 +55,13 @@ export function validateReport(
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true };
 }
 
-function toRow(input: ReportInput, mustami: Teacher) {
+function toRow(input: ReportInput, mustami: Teacher, teacherNameStr?: string) {
   const homework = input.homework?.trim();
   const mustamiNote = input.mustamiNote?.trim();
   return {
     date: input.date,
     teacherId: input.teacherId,
+    teacherName: teacherNameStr || "",
     mustamiId: mustami.id,
     mustamiName: mustami.name,
     material: input.material,
@@ -77,7 +78,7 @@ function toRow(input: ReportInput, mustami: Teacher) {
 /** Report Created -> Save -> Notification -> Activity Log */
 export function createReport(input: ReportInput, mustami: Teacher, assessedName: string): Report {
   const report = reportRepo.create({
-    ...toRow(input, mustami),
+    ...toRow(input, mustami, assessedName),
     createdBy: mustami.id,
     updatedBy: mustami.id,
   });
@@ -120,7 +121,7 @@ export function updateReport(
   assessedName: string,
 ): Report | undefined {
   const existing = reportRepo.get(id);
-  const row = toRow(input, mustami);
+  const row = toRow(input, mustami, assessedName);
   const updated = reportRepo.update(id, {
     ...row,
     homeworkDone: existing?.homeworkDone ?? false,

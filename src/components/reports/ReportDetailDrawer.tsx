@@ -15,17 +15,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { printReportEvaluationSheet } from "@/lib/services/reporting-export-service";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,7 +53,7 @@ interface ReportDetailDrawerProps {
   canEdit: boolean;
   currentUserId?: string | undefined;
   onEdit?: ((report: Report) => void) | undefined;
-  onDelete?: ((report: Report) => void) | undefined;
+  onDelete?: ((report: Report, mode: "permanent" | "soft") => void) | undefined;
   onToggleHomework?: ((report: Report) => void) | undefined;
 }
 
@@ -87,8 +77,8 @@ export function ReportDetailDrawer({
   const isHomeworkToggleable =
     report.homework && (canEdit || report.teacherId === currentUserId);
 
-  const handleDelete = () => {
-    onDelete?.(report);
+  const handleDelete = (mode: "permanent" | "soft") => {
+    onDelete?.(report, mode);
     setDeleteDialogOpen(false);
     onOpenChange(false);
   };
@@ -258,28 +248,17 @@ export function ReportDetailDrawer({
                 <Pencil className="size-3.5" /> Edit
               </Button>
 
-              <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" className="text-xs gap-1.5">
-                    <Trash2 className="size-3.5" /> Hapus
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Hapus Setoran Ini?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Setoran materi <strong>{report.materialDetail}</strong> ({report.reference}) untuk{" "}
-                      <strong>{assessedName}</strong> akan dihapus (soft delete) dari sistem.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Batal</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                      Ya, Hapus
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button variant="destructive" size="sm" className="text-xs gap-1.5" onClick={() => setDeleteDialogOpen(true)}>
+                <Trash2 className="size-3.5" /> Hapus
+              </Button>
+
+              <ConfirmDeleteDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Hapus Data Setoran"
+                itemName={`${report.materialDetail} (${assessedName})`}
+                onConfirm={handleDelete}
+              />
             </>
           )}
         </div>

@@ -17,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -104,6 +105,20 @@ function Page() {
     const next = t.status === "aktif" ? "nonaktif" : "aktif";
     setTeacherStatus(t.id, next);
     toast.success(next === "aktif" ? "Guru diaktifkan kembali." : "Guru dinonaktifkan.");
+  };
+
+  const [deleteTeacherTarget, setDeleteTeacherTarget] = useState<Teacher | null>(null);
+
+  const handleDeleteTeacher = (t: Teacher) => {
+    setDeleteTeacherTarget(t);
+  };
+
+  const confirmDeleteTeacher = () => {
+    if (!deleteTeacherTarget) return;
+    teacherRepo.remove(deleteTeacherTarget.id);
+    toast.success(`Data guru ${deleteTeacherTarget.name} berhasil dihapus.`);
+    setDeleteTeacherTarget(null);
+    if (detail?.id === deleteTeacherTarget.id) setDetail(null);
   };
 
   return (
@@ -244,6 +259,7 @@ function Page() {
                             onEdit={openEdit}
                             onToggle={toggleStatus}
                             onDetail={setDetail}
+                            onDelete={handleDeleteTeacher}
                           />
                         </TableCell>
                       </TableRow>
@@ -277,7 +293,13 @@ function Page() {
                     </div>
                   </div>
                   <div onClick={(e) => e.stopPropagation()}>
-                    <RowMenu t={t} onEdit={openEdit} onToggle={toggleStatus} onDetail={setDetail} />
+                    <RowMenu
+                      t={t}
+                      onEdit={openEdit}
+                      onToggle={toggleStatus}
+                      onDetail={setDetail}
+                      onDelete={handleDeleteTeacher}
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -297,6 +319,26 @@ function Page() {
         reports={reports}
         onOpenChange={(v) => !v && setDetail(null)}
         onEdit={openEdit}
+        onDelete={handleDeleteTeacher}
+      />
+
+      <ConfirmDeleteDialog
+        open={!!deleteTeacherTarget}
+        onOpenChange={(open) => !open && setDeleteTeacherTarget(null)}
+        title="Hapus Data Guru"
+        itemName={deleteTeacherTarget?.name}
+        onConfirm={(mode) => {
+          if (!deleteTeacherTarget) return;
+          if (mode === "permanent") {
+            teacherRepo.remove(deleteTeacherTarget.id);
+            toast.success(`Data guru ${deleteTeacherTarget.name} dihapus permanen (clear database).`);
+          } else {
+            setTeacherStatus(deleteTeacherTarget.id, "nonaktif");
+            toast.success(`Data guru ${deleteTeacherTarget.name} dinonaktifkan/diarsipkan.`);
+          }
+          setDeleteTeacherTarget(null);
+          if (detail?.id === deleteTeacherTarget.id) setDetail(null);
+        }}
       />
     </AppShell>
   );
@@ -307,11 +349,13 @@ function RowMenu({
   onEdit,
   onToggle,
   onDetail,
+  onDelete,
 }: {
   t: Teacher;
   onEdit: (t: Teacher) => void;
   onToggle: (t: Teacher) => void;
   onDetail: (t: Teacher) => void;
+  onDelete: (t: Teacher) => void;
 }) {
   return (
     <DropdownMenu>
@@ -325,6 +369,9 @@ function RowMenu({
         <DropdownMenuItem onClick={() => onEdit(t)}>Edit</DropdownMenuItem>
         <DropdownMenuItem onClick={() => onToggle(t)}>
           {t.status === "aktif" ? "Nonaktifkan" : "Aktifkan"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onDelete(t)} className="text-destructive font-medium">
+          Hapus Guru
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

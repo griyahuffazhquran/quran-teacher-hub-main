@@ -103,10 +103,10 @@ function SettingsPage() {
               </div>
 
               <div className="p-3 rounded-xl bg-muted/40 space-y-1">
-                <p className="text-muted-foreground font-medium">Versi & Lisensi</p>
-                <p className="font-bold text-foreground text-sm">v2.4.0 (Stable)</p>
+                <p className="text-muted-foreground font-medium">Versi & Integrasi Backend</p>
+                <p className="font-bold text-foreground text-sm">v2.4.0 (Live Sync)</p>
                 <p className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">
-                  ✓ Auto Sync Live
+                  ✓ Google Spreadsheet Sync Active & Connected
                 </p>
               </div>
             </CardContent>

@@ -260,10 +260,15 @@ function Dashboard() {
     setDialogOpen(true);
   };
 
-  const handleDelete = (report: Report) => {
+  const handleDelete = (report: Report, mode: "permanent" | "soft" = "permanent") => {
     if (!user) return;
-    softDeleteReport(report.id, user.id);
-    toast.success("Setoran berhasil dihapus.");
+    if (mode === "permanent") {
+      reportRepo.remove(report.id);
+      toast.success("Setoran berhasil dihapus permanen (clear database).");
+    } else {
+      softDeleteReport(report.id, user.id);
+      toast.success("Setoran diarsipkan.");
+    }
     if (selectedReport?.id === report.id) {
       setDrawerOpen(false);
       setSelectedReport(null);

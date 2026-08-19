@@ -135,10 +135,15 @@ function Page() {
     setDrawerOpen(true);
   };
 
-  const handleDelete = (r: Report) => {
+  const handleDelete = (r: Report, mode: "permanent" | "soft" = "permanent") => {
     if (!user) return;
-    softDeleteReport(r.id, user.id);
-    toast.success("Setoran dihapus.");
+    if (mode === "permanent") {
+      reportRepo.remove(r.id);
+      toast.success("Setoran dihapus permanen (clear database).");
+    } else {
+      softDeleteReport(r.id, user.id);
+      toast.success("Setoran diarsipkan.");
+    }
     if (selectedReport?.id === r.id) {
       setDrawerOpen(false);
       setSelectedReport(null);

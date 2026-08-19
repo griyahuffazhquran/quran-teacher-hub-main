@@ -14,16 +14,7 @@ import { AnnouncementDialog } from "@/components/announcements/AnnouncementDialo
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { useCollection } from "@/hooks/use-repository";
 import { useSession } from "@/hooks/use-session";
 import { announcementRepo } from "@/lib/data/repositories";
@@ -218,23 +209,20 @@ function AnnouncementsPage() {
           />
         )}
 
-        {/* Delete Confirmation Alert */}
-        <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Hapus Pengumuman?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Pengumuman yang dihapus tidak dapat dikembalikan.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Batal</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive hover:bg-destructive/90">
-                Hapus
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDeleteDialog
+          open={!!deleteId}
+          onOpenChange={(open) => !open && setDeleteId(null)}
+          title="Hapus Pengumuman"
+          itemName={announcements.find((a) => a.id === deleteId)?.title}
+          allowChoice={false}
+          onConfirm={() => {
+            if (!deleteId) return;
+            announcementRepo.remove(deleteId);
+            toast.success("Pengumuman berhasil dihapus dari database.");
+            setDeleteId(null);
+          }}
+        />
       </div>
     </AppShell>
   );

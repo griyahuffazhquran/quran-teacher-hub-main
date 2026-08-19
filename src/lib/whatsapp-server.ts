@@ -60,11 +60,8 @@ function initClient(): Promise<void> {
     waClient.on("qr", (qr: string) => {
       console.log("\n📱 [WhatsApp Server] Scan QR code berikut di WhatsApp Anda:");
       console.log("─".repeat(50));
-      // Dynamic import for qrcode-terminal
-      import("qrcode-terminal").then((qrcodeTerminal: { generate: (qr: string, opts: { small: boolean }) => void; default?: { generate: (qr: string, opts: { small: boolean }) => void } }) => {
-        const qrTool = qrcodeTerminal.default || qrcodeTerminal;
-        qrTool.generate(qr, { small: true });
-      });
+      // Simple QR link log for terminal
+      console.log(`[QR Code Data]: ${qr}`);
       console.log("─".repeat(50));
       console.log("💡 Buka WhatsApp > Linked Devices > Link a Device > Scan QR di atas\n");
     });

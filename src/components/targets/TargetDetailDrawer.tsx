@@ -40,6 +40,8 @@ import type { ReminderFrequency, Target, Teacher } from "@/lib/data/types";
 import { createReminder, deleteReminder, dismissReminder } from "@/lib/services/reminder-service";
 import { updateTargetProgress } from "@/lib/services/target-service";
 
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
+
 interface TargetDetailDrawerProps {
   target: Target | null;
   open: boolean;
@@ -48,7 +50,7 @@ interface TargetDetailDrawerProps {
   canEdit: boolean;
   currentUserId?: string | undefined;
   onEdit?: ((target: Target) => void) | undefined;
-  onDelete?: ((target: Target) => void) | undefined;
+  onDelete?: ((target: Target, mode: "permanent" | "soft") => void) | undefined;
 }
 
 export function TargetDetailDrawer({
@@ -62,6 +64,7 @@ export function TargetDetailDrawer({
   onDelete,
 }: TargetDetailDrawerProps) {
   const { rows: allReminders } = useCollection(reminderRepo);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // Form state for creating a new reminder
   const [showReminderForm, setShowReminderForm] = useState(false);
@@ -366,13 +369,21 @@ export function TargetDetailDrawer({
             <Button
               variant="destructive"
               className="text-xs gap-1.5"
-              onClick={() => {
-                onOpenChange(false);
-                onDelete?.(target);
-              }}
+              onClick={() => setDeleteConfirmOpen(true)}
             >
               <Trash2 className="size-3.5" /> Hapus
             </Button>
+
+            <ConfirmDeleteDialog
+              open={deleteConfirmOpen}
+              onOpenChange={setDeleteConfirmOpen}
+              title="Hapus Target Upgrading"
+              itemName={target.title}
+              onConfirm={(mode) => {
+                onOpenChange(false);
+                onDelete?.(target, mode);
+              }}
+            />
           </div>
         )}
       </SheetContent>

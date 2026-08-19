@@ -38,12 +38,15 @@ export function NotificationPopover() {
           variant="ghost"
           size="icon"
           aria-label="Notifikasi"
-          className="relative transition-transform duration-200 hover:scale-105 active:scale-95"
+          className="relative transition-all duration-300 hover:scale-110 active:scale-95 group"
         >
-          <Bell className="size-[18px]" />
+          <Bell className={cn("size-[18px] transition-transform duration-300 group-hover:rotate-12", unread > 0 && "animate-bounce text-primary")} />
           {unread > 0 && (
-            <span className="absolute right-1.5 top-1.5 grid size-4 animate-pulse place-items-center rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground">
-              {unread > 9 ? "9+" : unread}
+            <span className="absolute -top-0.5 -right-0.5 flex size-4">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
+              <span className="relative grid size-4 place-items-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground shadow-sm">
+                {unread > 9 ? "9+" : unread}
+              </span>
             </span>
           )}
         </Button>

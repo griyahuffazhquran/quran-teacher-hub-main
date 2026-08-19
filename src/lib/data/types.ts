@@ -34,6 +34,8 @@ export type Report = {
   id: ID;
   /** Guru yang dinilai (teacher being assessed). */
   teacherId: ID;
+  /** Nama guru penyetor / yang dinilai. */
+  teacherName?: string;
   /** Guru yang menyimak (mustami'). */
   mustamiId: ID;
   mustamiName: string;
