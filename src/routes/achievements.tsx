@@ -330,18 +330,18 @@ export function AchievementsPage() {
 
         {/* TABS UTAMA (HANYA TAB LEADERBOARD DIPERTINGKATKAN, TAB LAIN KHUSUS UPGRADER) */}
         <Tabs defaultValue="leaderboard" className="space-y-4">
-          <TabsList className={`flex flex-col sm:grid w-full h-auto p-1.5 gap-1.5 ${isUpgrader ? "sm:grid-cols-3" : "sm:grid-cols-1"}`}>
-            <TabsTrigger value="leaderboard" className="w-full py-2 sm:py-1.5 text-xs font-semibold gap-1.5 justify-center">
-              <Trophy className="size-3.5 shrink-0" /> <span className="truncate">Papan Peringkat Seluruh Guru</span>
+          <TabsList className={`flex flex-col sm:grid w-full h-auto p-1.5 gap-2 rounded-xl bg-muted/80 ${isUpgrader ? "sm:grid-cols-3" : "sm:grid-cols-1"}`}>
+            <TabsTrigger value="leaderboard" className="w-full min-h-10 px-3 text-xs sm:text-sm font-semibold gap-2 justify-center whitespace-normal text-center leading-tight py-2">
+              <Trophy className="size-4 shrink-0" /> <span>Papan Peringkat Seluruh Guru</span>
             </TabsTrigger>
             {isUpgrader && (
-              <TabsTrigger value="badges" className="w-full py-2 sm:py-1.5 text-xs font-semibold gap-1.5 justify-center">
-                <Award className="size-3.5 shrink-0" /> <span className="truncate">Manajemen Lencana Master (CRUD)</span>
+              <TabsTrigger value="badges" className="w-full min-h-10 px-3 text-xs sm:text-sm font-semibold gap-2 justify-center whitespace-normal text-center leading-tight py-2">
+                <Award className="size-4 shrink-0" /> <span>Manajemen Lencana Master (CRUD)</span>
               </TabsTrigger>
             )}
             {isUpgrader && (
-              <TabsTrigger value="settings" className="w-full py-2 sm:py-1.5 text-xs font-semibold gap-1.5 justify-center">
-                <Settings2 className="size-3.5 shrink-0" /> <span className="truncate">Pengaturan Poin XP</span>
+              <TabsTrigger value="settings" className="w-full min-h-10 px-3 text-xs sm:text-sm font-semibold gap-2 justify-center whitespace-normal text-center leading-tight py-2">
+                <Settings2 className="size-4 shrink-0" /> <span>Pengaturan Poin XP</span>
               </TabsTrigger>
             )}
           </TabsList>
