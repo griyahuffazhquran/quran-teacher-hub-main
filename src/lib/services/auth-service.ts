@@ -57,7 +57,13 @@ export function login(username: string, password: string): LoginResult {
   return { ok: true, user };
 }
 
+import { removePresence } from "./presence-service";
+
 export function logout() {
+  const s = getSession();
+  if (s?.userId) {
+    removePresence(s.userId);
+  }
   setSession(null);
 }
 

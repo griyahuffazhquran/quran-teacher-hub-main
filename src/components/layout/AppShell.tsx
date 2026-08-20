@@ -23,6 +23,7 @@ import { getMobileNav, getPrimaryNav, getSecondaryNav, type NavItem } from "./na
 import { cn } from "@/lib/utils";
 import { useSession } from "@/hooks/use-session";
 import { useAutoSync } from "@/hooks/use-auto-sync";
+import { usePresenceTracker } from "@/hooks/use-presence";
 import { logout } from "@/lib/services/auth-service";
 import { SyncStatusBadge } from "./SyncStatusBadge";
 import { useCollection } from "@/hooks/use-repository";
@@ -245,10 +246,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (ready && !user) void navigate({ to: "/login" });
   }, [ready, user, navigate]);
 
+  usePresenceTracker(user);
+
   // Role-Based Access Guard (Item 10)
   useEffect(() => {
     if (ready && user && !isUpgrader) {
-      if (pathname.startsWith("/teachers") || pathname.startsWith("/analytics")) {
+      if (
+        pathname.startsWith("/teachers") ||
+        pathname.startsWith("/analytics") ||
+        pathname.startsWith("/active-users")
+      ) {
         toast.error("Akses terbatas. Menu ini khusus untuk Upgrader/Pengurus.");
         void navigate({ to: "/" });
       }
