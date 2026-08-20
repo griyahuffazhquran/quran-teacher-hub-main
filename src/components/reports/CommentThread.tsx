@@ -3,6 +3,7 @@ import { MessageSquare, Send, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { Input } from "@/components/ui/input";
 import { useCollection } from "@/hooks/use-repository";
 import { commentRepo } from "@/lib/data/repositories";
@@ -43,12 +44,7 @@ export function CommentThread({
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (!currentUser) return;
-    if (deleteComment(id, currentUser)) {
-      toast.success("Komentar dihapus.");
-    }
-  };
+  const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null);
 
   return (
     <div className="space-y-3">
@@ -100,7 +96,7 @@ export function CommentThread({
                           size="icon"
                           variant="ghost"
                           className="size-5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
-                          onClick={() => handleDelete(c.id)}
+                          onClick={() => setDeleteCommentId(c.id)}
                           title="Hapus komentar"
                         >
                           <Trash2 className="size-3" />
@@ -133,6 +129,22 @@ export function CommentThread({
       ) : (
         <p className="text-xs text-muted-foreground text-center">Silakan masuk untuk menulis komentar.</p>
       )}
+
+      {/* Confirm Delete Comment Modal */}
+      <ConfirmDeleteDialog
+        open={!!deleteCommentId}
+        onOpenChange={(open) => !open && setDeleteCommentId(null)}
+        title="Konfirmasi Hapus Komentar"
+        description="Apakah Anda yakin ingin menghapus komentar ini?"
+        onConfirm={() => {
+          if (deleteCommentId && currentUser) {
+            if (deleteComment(deleteCommentId, currentUser)) {
+              toast.success("Komentar berhasil dihapus.");
+            }
+            setDeleteCommentId(null);
+          }
+        }}
+      />
     </div>
   );
 }

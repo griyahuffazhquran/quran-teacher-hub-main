@@ -3,6 +3,7 @@ import { MessageSquarePlus, MessageSquareText, ShieldCheck, Trash2, UserCheck } 
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useCollection } from "@/hooks/use-repository";
 import { feedbackRepo } from "@/lib/data/repositories";
@@ -54,12 +55,7 @@ export function FeedbackSection({
     setSubmitting(false);
   };
 
-  const handleDelete = (id: string) => {
-    if (!currentUser) return;
-    if (deleteFeedback(id, currentUser)) {
-      toast.success("Feedback dihapus.");
-    }
-  };
+  const [deleteFeedbackId, setDeleteFeedbackId] = useState<string | null>(null);
 
   return (
     <div className="space-y-4">
@@ -107,7 +103,7 @@ export function FeedbackSection({
                       size="icon"
                       variant="ghost"
                       className="size-6 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
-                      onClick={() => handleDelete(fb.id)}
+                      onClick={() => setDeleteFeedbackId(fb.id)}
                       title="Hapus feedback"
                     >
                       <Trash2 className="size-3" />
@@ -143,6 +139,22 @@ export function FeedbackSection({
           </div>
         </form>
       )}
+
+      {/* Confirm Delete Feedback Modal */}
+      <ConfirmDeleteDialog
+        open={!!deleteFeedbackId}
+        onOpenChange={(open) => !open && setDeleteFeedbackId(null)}
+        title="Konfirmasi Hapus Feedback"
+        description="Apakah Anda yakin ingin menghapus catatan feedback ini?"
+        onConfirm={() => {
+          if (deleteFeedbackId && currentUser) {
+            if (deleteFeedback(deleteFeedbackId, currentUser)) {
+              toast.success("Feedback berhasil dihapus.");
+            }
+            setDeleteFeedbackId(null);
+          }
+        }}
+      />
     </div>
   );
 }

@@ -25,6 +25,7 @@ import { useSession } from "@/hooks/use-session";
 import { useAutoSync } from "@/hooks/use-auto-sync";
 import { usePresenceTracker } from "@/hooks/use-presence";
 import { logout } from "@/lib/services/auth-service";
+import { isSessionExpiredDueToInactivity, touchLastActivity } from "@/lib/services/session-service";
 import { SyncStatusBadge } from "./SyncStatusBadge";
 import { useCollection } from "@/hooks/use-repository";
 import { announcementRepo } from "@/lib/data/repositories";
@@ -262,29 +263,52 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [ready, user, isUpgrader, pathname, navigate]);
 
-  // Item 7: 2-Hour Inactivity Auto-Logout Tracker
+  // Persistent 1-Hour Inactivity Auto-Logout Tracker (Mobile & Desktop Resilient)
   useEffect(() => {
     if (!ready || !user) return;
 
-    const INACTIVITY_LIMIT_MS = 7200000; // 2 hours
-    let lastActivity = Date.now();
+    // Check immediately on mount/hydration
+    if (isSessionExpiredDueToInactivity()) {
+      logout();
+      void navigate({ to: "/logout" });
+      return;
+    }
 
-    const updateActivity = () => {
-      lastActivity = Date.now();
+    // Touch activity on mount
+    touchLastActivity();
+
+    const handleUserActivity = () => {
+      touchLastActivity();
     };
 
-    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
-    events.forEach((ev) => window.addEventListener(ev, updateActivity, { passive: true }));
-
-    const interval = setInterval(() => {
-      if (Date.now() - lastActivity >= INACTIVITY_LIMIT_MS) {
+    const handleCheckAndTouch = () => {
+      if (isSessionExpiredDueToInactivity()) {
         logout();
-        void navigate({ to: "/session-expired" });
+        void navigate({ to: "/logout" });
+      } else if (document.visibilityState === "visible") {
+        touchLastActivity();
       }
-    }, 30000); // Check every 30s
+    };
+
+    const events = ["mousemove", "keydown", "click", "scroll", "touchstart", "pointerdown"];
+    events.forEach((ev) => window.addEventListener(ev, handleUserActivity, { passive: true }));
+
+    // Listen to visibility and focus changes (resilient when mobile app comes out of background/homescreen)
+    document.addEventListener("visibilitychange", handleCheckAndTouch);
+    window.addEventListener("focus", handleCheckAndTouch);
+
+    // Periodic check every 10 seconds
+    const interval = setInterval(() => {
+      if (isSessionExpiredDueToInactivity()) {
+        logout();
+        void navigate({ to: "/logout" });
+      }
+    }, 10000);
 
     return () => {
-      events.forEach((ev) => window.removeEventListener(ev, updateActivity));
+      events.forEach((ev) => window.removeEventListener(ev, handleUserActivity));
+      document.removeEventListener("visibilitychange", handleCheckAndTouch);
+      window.removeEventListener("focus", handleCheckAndTouch);
       clearInterval(interval);
     };
   }, [ready, user, navigate]);

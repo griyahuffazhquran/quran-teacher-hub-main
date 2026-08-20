@@ -103,7 +103,7 @@ function Page() {
     });
 
     return [...filtered].sort((a, b) => {
-      if (sortBy === "date-desc") return b.date.localeCompare(a.date);
+      if (sortBy === "date-desc") return (b.createdAt || b.date).localeCompare(a.createdAt || a.date);
       if (sortBy === "date-asc") return a.date.localeCompare(b.date);
       if (sortBy === "grade-desc") return (gradeWeight[b.grade] ?? 0) - (gradeWeight[a.grade] ?? 0);
       if (sortBy === "grade-asc") return (gradeWeight[a.grade] ?? 0) - (gradeWeight[b.grade] ?? 0);

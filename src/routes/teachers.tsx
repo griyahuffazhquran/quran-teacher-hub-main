@@ -62,7 +62,7 @@ function Page() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<string>("semua");
   const [role, setRole] = useState<string>("semua");
-  const [sort, setSort] = useState<SortKey>("name");
+  const [sort, setSort] = useState<SortKey>("joinedAt");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Teacher | null>(null);
   const [detail, setDetail] = useState<Teacher | null>(null);
@@ -86,7 +86,7 @@ function Page() {
     });
     return [...filtered].sort((a, b) => {
       if (sort === "name") return a.name.localeCompare(b.name);
-      if (sort === "joinedAt") return b.joinedAt.localeCompare(a.joinedAt);
+      if (sort === "joinedAt") return (b.createdAt || b.joinedAt || "").localeCompare(a.createdAt || a.joinedAt || "");
       return countFor(b.id) - countFor(a.id);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

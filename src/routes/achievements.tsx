@@ -330,18 +330,18 @@ export function AchievementsPage() {
 
         {/* TABS UTAMA (HANYA TAB LEADERBOARD DIPERTINGKATKAN, TAB LAIN KHUSUS UPGRADER) */}
         <Tabs defaultValue="leaderboard" className="space-y-4">
-          <TabsList className={`grid w-full ${isUpgrader ? "grid-cols-3" : "grid-cols-1"}`}>
-            <TabsTrigger value="leaderboard" className="text-xs font-semibold gap-1.5">
-              <Trophy className="size-3.5" /> Papan Peringkat Seluruh Guru
+          <TabsList className={`flex flex-col sm:grid w-full h-auto p-1.5 gap-1.5 ${isUpgrader ? "sm:grid-cols-3" : "sm:grid-cols-1"}`}>
+            <TabsTrigger value="leaderboard" className="w-full py-2 sm:py-1.5 text-xs font-semibold gap-1.5 justify-center">
+              <Trophy className="size-3.5 shrink-0" /> <span className="truncate">Papan Peringkat Seluruh Guru</span>
             </TabsTrigger>
             {isUpgrader && (
-              <TabsTrigger value="badges" className="text-xs font-semibold gap-1.5">
-                <Award className="size-3.5" /> Manajemen Lencana Master (CRUD)
+              <TabsTrigger value="badges" className="w-full py-2 sm:py-1.5 text-xs font-semibold gap-1.5 justify-center">
+                <Award className="size-3.5 shrink-0" /> <span className="truncate">Manajemen Lencana Master (CRUD)</span>
               </TabsTrigger>
             )}
             {isUpgrader && (
-              <TabsTrigger value="settings" className="text-xs font-semibold gap-1.5">
-                <Settings2 className="size-3.5" /> Pengaturan Poin XP
+              <TabsTrigger value="settings" className="w-full py-2 sm:py-1.5 text-xs font-semibold gap-1.5 justify-center">
+                <Settings2 className="size-3.5 shrink-0" /> <span className="truncate">Pengaturan Poin XP</span>
               </TabsTrigger>
             )}
           </TabsList>

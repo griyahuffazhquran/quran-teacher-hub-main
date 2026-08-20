@@ -22,6 +22,7 @@ import { ReportDetailDrawer } from "@/components/reports/ReportDetailDrawer";
 import { TargetCard } from "@/components/targets/TargetCard";
 import { TargetDetailDrawer } from "@/components/targets/TargetDetailDrawer";
 import { TargetFormDialog } from "@/components/targets/TargetFormDialog";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,6 +94,9 @@ function Page() {
   const [selectedReport, setSelectedReport] = useState<any | null>(null);
   const [reportDrawerOpen, setReportDrawerOpen] = useState(false);
 
+  const [deleteTargetItem, setDeleteTargetItem] = useState<Target | null>(null);
+  const [deleteReminderId, setDeleteReminderId] = useState<string | null>(null);
+
   // Search & Filter state
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -123,7 +127,7 @@ function Page() {
       const title = t.title.toLowerCase();
       const desc = (t.description || "").toLowerCase();
       return title.includes(q) || tName.includes(q) || desc.includes(q);
-    });
+    }).sort((a, b) => (b.createdAt || b.startDate || "").localeCompare(a.createdAt || a.startDate || ""));
   }, [userTargets, query, statusFilter, periodFilter, teacherFilter, teachers]);
 
   // Stats calculation
@@ -348,7 +352,7 @@ function Page() {
                   canEdit={isUpgrader || t.createdBy === user?.id || t.teacherId === user?.id}
                   onSelect={handleSelectTarget}
                   onEdit={handleEdit}
-                  onDelete={handleDelete}
+                  onDelete={(target) => setDeleteTargetItem(target)}
                   onAddReminder={handleAddReminderForTarget}
                 />
               ))}
@@ -425,10 +429,7 @@ function Page() {
                           size="icon"
                           variant="ghost"
                           className="size-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => {
-                            deleteReminder(r.id);
-                            toast.success("Pengingat dihapus.");
-                          }}
+                          onClick={() => setDeleteReminderId(r.id)}
                         >
                           <Trash2 className="size-3.5" />
                         </Button>
@@ -484,7 +485,7 @@ function Page() {
         }
         currentUserId={user?.id}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        onDelete={(target) => setDeleteTargetItem(target)}
       />
 
       {/* Report Detail Drawer for Calendar view triggers */}
@@ -499,6 +500,35 @@ function Page() {
             : false
         }
         currentUserId={user?.id}
+      />
+
+      {/* Confirm Delete Target Dialog */}
+      <ConfirmDeleteDialog
+        open={!!deleteTargetItem}
+        onOpenChange={(open) => !open && setDeleteTargetItem(null)}
+        title="Konfirmasi Hapus Target"
+        itemName={deleteTargetItem?.title}
+        onConfirm={(mode) => {
+          if (deleteTargetItem) {
+            handleDelete(deleteTargetItem, mode);
+            setDeleteTargetItem(null);
+          }
+        }}
+      />
+
+      {/* Confirm Delete Reminder Dialog */}
+      <ConfirmDeleteDialog
+        open={!!deleteReminderId}
+        onOpenChange={(open) => !open && setDeleteReminderId(null)}
+        title="Konfirmasi Hapus Pengingat"
+        description="Apakah Anda yakin ingin menghapus pengingat ini?"
+        onConfirm={() => {
+          if (deleteReminderId) {
+            deleteReminder(deleteReminderId);
+            toast.success("Pengingat berhasil dihapus.");
+            setDeleteReminderId(null);
+          }
+        }}
       />
     </AppShell>
   );

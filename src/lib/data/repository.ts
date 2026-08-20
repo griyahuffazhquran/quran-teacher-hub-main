@@ -23,7 +23,7 @@ export function createRepository<T extends Base>(
   /** Optional upgrade step for rows persisted with an older schema. */
   migrate: (rows: unknown[]) => T[] = (rows) => rows as T[],
 ): Repository<T> {
-  let rows: T[] = [];
+  let rows: T[] = seed();
   let hydrated = false;
   const listeners = new Set<() => void>();
 

@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -99,14 +100,16 @@ function Page() {
     });
   }, [userNotifications, typeFilter]);
 
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [clearAllConfirmOpen, setClearAllConfirmOpen] = useState(false);
+
   const handleMarkAllRead = () => {
     markAllAsRead(user?.id);
     toast.success("Semua notifikasi ditandai dibaca.");
   };
 
   const handleClearAll = () => {
-    clearAllNotifications(user?.id);
-    toast.success("Semua notifikasi dibersihkan.");
+    setClearAllConfirmOpen(true);
   };
 
   const handleNotificationClick = (n: NotificationItem) => {
@@ -122,8 +125,7 @@ function Page() {
 
   const handleDeleteItem = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    deleteNotification(id);
-    toast.success("Notifikasi dihapus.");
+    setDeleteTargetId(id);
   };
 
   return (
@@ -307,6 +309,34 @@ function Page() {
             : false
         }
         currentUserId={user?.id}
+      />
+
+      {/* Confirm Delete Single Notification */}
+      <ConfirmDeleteDialog
+        open={!!deleteTargetId}
+        onOpenChange={(open) => !open && setDeleteTargetId(null)}
+        title="Konfirmasi Hapus Notifikasi"
+        description="Apakah Anda yakin ingin menghapus notifikasi ini?"
+        onConfirm={() => {
+          if (deleteTargetId) {
+            deleteNotification(deleteTargetId);
+            toast.success("Notifikasi berhasil dihapus.");
+            setDeleteTargetId(null);
+          }
+        }}
+      />
+
+      {/* Confirm Clear All Notifications */}
+      <ConfirmDeleteDialog
+        open={clearAllConfirmOpen}
+        onOpenChange={setClearAllConfirmOpen}
+        title="Bersihkan Semua Notifikasi"
+        description="Apakah Anda yakin ingin menghapus seluruh notifikasi Anda?"
+        onConfirm={() => {
+          clearAllNotifications(user?.id);
+          toast.success("Semua notifikasi berhasil dibersihkan.");
+          setClearAllConfirmOpen(false);
+        }}
       />
     </AppShell>
   );

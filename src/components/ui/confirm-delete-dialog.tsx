@@ -58,7 +58,7 @@ export function ConfirmDeleteDialog({
         </AlertDialogHeader>
 
         <AlertDialogFooter className="pt-3 sm:space-x-2">
-          <AlertDialogCancel className="h-9 text-xs font-medium">Batal</AlertDialogCancel>
+          <AlertDialogCancel className="h-9 text-xs font-medium">Tidak, Batal</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
             className="h-9 text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-1.5 font-semibold shadow-md transition-all active:scale-95"
