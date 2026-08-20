@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "update-run": "npm install && npm run dev",
-    "build": "vite build",
+    "build": "vite build && node scripts/generate-static-index.js",
     "build:dev": "vite build --mode development",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
