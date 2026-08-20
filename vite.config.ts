@@ -20,7 +20,7 @@ export default defineConfig({
     externals: {
       external: ["@aws-sdk/client-s3"],
     },
-  },
+  } as any,
   vite: {
     build: {
       rollupOptions: {

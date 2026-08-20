@@ -115,6 +115,7 @@ export async function syncPresenceWithServer() {
     if (res && res.ok && res.presenceMap) {
       for (const userId in res.presenceMap) {
         const serverRecord = res.presenceMap[userId];
+        if (!serverRecord) continue;
         const localRecord = currentMap[userId];
 
         if (!localRecord || serverRecord.lastSeenAt > localRecord.lastSeenAt) {
@@ -130,10 +131,11 @@ export async function syncPresenceWithServer() {
   // 2. Fetch from Google Apps Script if configured (works across any devices on internet)
   if (isGasApiConfigured()) {
     try {
-      const gasRes = await fetchFromGas("getPresence");
-      if (gasRes && gasRes.ok && gasRes.presenceMap) {
-        for (const userId in gasRes.presenceMap) {
-          const gasRecord = gasRes.presenceMap[userId];
+      const gasRes = await fetchFromGas<{ presenceMap?: Record<string, UserPresenceRecord> }>("getPresence");
+      if (gasRes && gasRes.ok && gasRes.data?.presenceMap) {
+        for (const userId in gasRes.data.presenceMap) {
+          const gasRecord = gasRes.data.presenceMap[userId];
+          if (!gasRecord) continue;
           const localRecord = mergedMap[userId];
 
           if (!localRecord || gasRecord.lastSeenAt > localRecord.lastSeenAt) {
@@ -160,17 +162,19 @@ export function sendHeartbeat(user: Teacher, statusOverride?: PresenceStatus) {
   const status: PresenceStatus =
     statusOverride ?? (isVisible ? "online" : "idle");
 
+  const pos = user.position || (user.role === "upgrader" ? "Upgrader / Pengurus" : "Guru Pengajar");
+
   const payload: UserPresenceRecord = {
     tabId: TAB_ID,
     userId: user.id,
     userName: user.name,
     userRole: user.role ?? "teacher",
-    gender: user.gender,
-    position: user.position || (user.role === "upgrader" ? "Upgrader / Pengurus" : "Guru Pengajar"),
     currentPath: window.location.pathname,
     deviceInfo: getDeviceInfo(),
     lastSeenAt: Date.now(),
     status,
+    ...(user.gender ? { gender: user.gender } : {}),
+    ...(pos ? { position: pos } : {}),
   };
 
   map[user.id] = payload;
@@ -182,11 +186,11 @@ export function sendHeartbeat(user: Teacher, statusOverride?: PresenceStatus) {
       userId: user.id,
       userName: user.name,
       userRole: user.role ?? "teacher",
-      gender: user.gender,
-      position: payload.position,
       currentPath: window.location.pathname,
       deviceInfo: payload.deviceInfo,
       status,
+      ...(user.gender ? { gender: user.gender } : {}),
+      ...(pos ? { position: pos } : {}),
     },
   })
     .then((res) => {
@@ -199,10 +203,10 @@ export function sendHeartbeat(user: Teacher, statusOverride?: PresenceStatus) {
 
   // 2. Push to Google Apps Script if configured
   if (isGasApiConfigured()) {
-    void postToGas("updatePresence", payload)
+    void postToGas<{ presenceMap?: Record<string, UserPresenceRecord> }>("updatePresence", payload)
       .then((gasRes) => {
-        if (gasRes && gasRes.ok && gasRes.presenceMap) {
-          const updatedMap = { ...readPresenceMap(), ...gasRes.presenceMap };
+        if (gasRes && gasRes.ok && gasRes.data?.presenceMap) {
+          const updatedMap = { ...readPresenceMap(), ...gasRes.data.presenceMap };
           writePresenceMap(updatedMap);
         }
       })
