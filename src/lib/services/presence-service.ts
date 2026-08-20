@@ -101,7 +101,7 @@ export function writePresenceMap(map: Record<string, UserPresenceRecord>) {
   }
 }
 
-/** Sync cross-device presence from Server Function & Google Apps Script. */
+/** Sync cross-device presence from Universal HTTP API endpoint, Server Function & Google Apps Script. */
 export async function syncPresenceWithServer() {
   if (typeof window === "undefined") return;
 
@@ -109,14 +109,37 @@ export async function syncPresenceWithServer() {
   let hasChanges = false;
   const mergedMap = { ...currentMap };
 
-  // 1. Fetch from TanStack Start server function (works across devices on network/server)
+  // 1. Fetch from Universal HTTP API endpoint (/api/presence)
+  try {
+    const apiRes = await fetch("/api/presence", {
+      headers: { Accept: "application/json" },
+    });
+    if (apiRes.ok) {
+      const data = (await apiRes.json()) as { ok: boolean; presenceMap?: Record<string, UserPresenceRecord> };
+      if (data.ok && data.presenceMap) {
+        for (const userId in data.presenceMap) {
+          const rec = data.presenceMap[userId];
+          if (!rec) continue;
+          const loc = currentMap[userId];
+          if (!loc || rec.lastSeenAt > loc.lastSeenAt) {
+            mergedMap[userId] = rec;
+            hasChanges = true;
+          }
+        }
+      }
+    }
+  } catch {
+    // ignore network fetch errors
+  }
+
+  // 2. Fetch from TanStack Start server function
   try {
     const res = await fetchPresenceMapServerFn();
     if (res && res.ok && res.presenceMap) {
       for (const userId in res.presenceMap) {
         const serverRecord = res.presenceMap[userId];
         if (!serverRecord) continue;
-        const localRecord = currentMap[userId];
+        const localRecord = mergedMap[userId];
 
         if (!localRecord || serverRecord.lastSeenAt > localRecord.lastSeenAt) {
           mergedMap[userId] = serverRecord;
@@ -128,7 +151,7 @@ export async function syncPresenceWithServer() {
     // ignore server fn errors
   }
 
-  // 2. Fetch from Google Apps Script if configured (works across any devices on internet)
+  // 3. Fetch from Google Apps Script if configured
   if (isGasApiConfigured()) {
     try {
       const gasRes = await fetchFromGas<{ presenceMap?: Record<string, UserPresenceRecord> }>("getPresence");
@@ -178,9 +201,29 @@ export function sendHeartbeat(user: Teacher, statusOverride?: PresenceStatus) {
   };
 
   map[user.id] = payload;
+  if (user.username) {
+    map[user.username] = payload;
+  }
   writePresenceMap(map);
 
-  // 1. Push to TanStack Start server
+  // 1. Post to Universal HTTP API endpoint (/api/presence)
+  void fetch("/api/presence", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then(async (res) => {
+      if (res.ok) {
+        const data = (await res.json()) as { ok: boolean; presenceMap?: Record<string, UserPresenceRecord> };
+        if (data.ok && data.presenceMap) {
+          const updatedMap = { ...readPresenceMap(), ...data.presenceMap };
+          writePresenceMap(updatedMap);
+        }
+      }
+    })
+    .catch(() => {});
+
+  // 2. Push to TanStack Start server function
   void pushHeartbeatServerFn({
     data: {
       userId: user.id,
@@ -201,7 +244,7 @@ export function sendHeartbeat(user: Teacher, statusOverride?: PresenceStatus) {
     })
     .catch(() => {});
 
-  // 2. Push to Google Apps Script if configured
+  // 3. Push to Google Apps Script if configured
   if (isGasApiConfigured()) {
     void postToGas<{ presenceMap?: Record<string, UserPresenceRecord> }>("updatePresence", payload)
       .then((gasRes) => {
@@ -222,6 +265,13 @@ export function removePresence(userId: string) {
     delete map[userId];
     writePresenceMap(map);
   }
+
+  void fetch("/api/presence", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, status: "offline" }),
+  }).catch(() => {});
+
   void pushHeartbeatServerFn({
     data: {
       userId,
@@ -241,7 +291,7 @@ export function removePresence(userId: string) {
   }
 }
 
-/** Helper to categorize user presence. */
+/** Helper to categorize user presence with mobile-friendly timeouts. */
 export function evaluatePresenceStatus(record?: UserPresenceRecord): {
   isOnline: boolean;
   isIdle: boolean;
@@ -253,14 +303,14 @@ export function evaluatePresenceStatus(record?: UserPresenceRecord): {
   }
 
   const diffMs = Date.now() - record.lastSeenAt;
-  const TIMEOUT_ONLINE = 15000; // 15 seconds
-  const TIMEOUT_IDLE = 35000; // 35 seconds
+  const TIMEOUT_ONLINE = 30000; // 30 seconds (mobile-friendly timeout)
+  const TIMEOUT_IDLE = 90000; // 90 seconds (background tab timeout)
 
   if (record.status === "offline" || diffMs > TIMEOUT_IDLE) {
     return { isOnline: false, isIdle: false, isOffline: true, statusLabel: "Offline" };
   }
 
-  if (record.status === "idle" || !record.status || diffMs > TIMEOUT_ONLINE) {
+  if (record.status === "idle" || diffMs > TIMEOUT_ONLINE) {
     return { isOnline: false, isIdle: true, isOffline: false, statusLabel: "Latar Belakang / Idle" };
   }
 

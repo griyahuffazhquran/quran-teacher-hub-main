@@ -109,7 +109,16 @@ function ActiveUsersPage() {
   // Combined list of teachers with presence data
   const combinedList = useMemo(() => {
     return allTeachers.map((teacher) => {
-      const presence: UserPresenceRecord | undefined = presenceMap[teacher.id];
+      const presence: UserPresenceRecord | undefined =
+        presenceMap[teacher.id] ||
+        (teacher.username ? presenceMap[teacher.username] : undefined) ||
+        Object.values(presenceMap).find(
+          (p) =>
+            p.userId === teacher.id ||
+            (teacher.username && p.userId === teacher.username) ||
+            (p.userName && p.userName.toLowerCase() === teacher.name.toLowerCase()),
+        );
+
       const presenceInfo = evaluatePresenceStatus(presence);
       return {
         teacher,
