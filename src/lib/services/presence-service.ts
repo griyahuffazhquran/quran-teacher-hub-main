@@ -1,5 +1,11 @@
+import { isGasApiConfigured } from "@/lib/config/api-config";
 import { STORAGE_PREFIX } from "@/lib/data/storage";
 import type { Teacher, UserRole } from "@/lib/data/types";
+import { fetchFromGas, postToGas } from "@/lib/services/gas-api-service";
+import {
+  fetchPresenceMapServerFn,
+  pushHeartbeatServerFn,
+} from "@/server-functions/presence-server-fn";
 
 const PRESENCE_KEY = `${STORAGE_PREFIX}:active_presence_v1`;
 const CHANNEL_NAME = "quran_hub_presence_channel";
@@ -95,6 +101,57 @@ export function writePresenceMap(map: Record<string, UserPresenceRecord>) {
   }
 }
 
+/** Sync cross-device presence from Server Function & Google Apps Script. */
+export async function syncPresenceWithServer() {
+  if (typeof window === "undefined") return;
+
+  const currentMap = readPresenceMap();
+  let hasChanges = false;
+  const mergedMap = { ...currentMap };
+
+  // 1. Fetch from TanStack Start server function (works across devices on network/server)
+  try {
+    const res = await fetchPresenceMapServerFn();
+    if (res && res.ok && res.presenceMap) {
+      for (const userId in res.presenceMap) {
+        const serverRecord = res.presenceMap[userId];
+        const localRecord = currentMap[userId];
+
+        if (!localRecord || serverRecord.lastSeenAt > localRecord.lastSeenAt) {
+          mergedMap[userId] = serverRecord;
+          hasChanges = true;
+        }
+      }
+    }
+  } catch {
+    // ignore server fn errors
+  }
+
+  // 2. Fetch from Google Apps Script if configured (works across any devices on internet)
+  if (isGasApiConfigured()) {
+    try {
+      const gasRes = await fetchFromGas("getPresence");
+      if (gasRes && gasRes.ok && gasRes.presenceMap) {
+        for (const userId in gasRes.presenceMap) {
+          const gasRecord = gasRes.presenceMap[userId];
+          const localRecord = mergedMap[userId];
+
+          if (!localRecord || gasRecord.lastSeenAt > localRecord.lastSeenAt) {
+            mergedMap[userId] = gasRecord;
+            hasChanges = true;
+          }
+        }
+      }
+    } catch {
+      // ignore GAS errors
+    }
+  }
+
+  if (hasChanges) {
+    writePresenceMap(mergedMap);
+  }
+}
+
 /** Update heartbeat for the current logged-in user. */
 export function sendHeartbeat(user: Teacher, statusOverride?: PresenceStatus) {
   if (typeof window === "undefined" || !user) return;
@@ -103,7 +160,7 @@ export function sendHeartbeat(user: Teacher, statusOverride?: PresenceStatus) {
   const status: PresenceStatus =
     statusOverride ?? (isVisible ? "online" : "idle");
 
-  const record: UserPresenceRecord = {
+  const payload: UserPresenceRecord = {
     tabId: TAB_ID,
     userId: user.id,
     userName: user.name,
@@ -116,8 +173,41 @@ export function sendHeartbeat(user: Teacher, statusOverride?: PresenceStatus) {
     status,
   };
 
-  map[user.id] = record;
+  map[user.id] = payload;
   writePresenceMap(map);
+
+  // 1. Push to TanStack Start server
+  void pushHeartbeatServerFn({
+    data: {
+      userId: user.id,
+      userName: user.name,
+      userRole: user.role ?? "teacher",
+      gender: user.gender,
+      position: payload.position,
+      currentPath: window.location.pathname,
+      deviceInfo: payload.deviceInfo,
+      status,
+    },
+  })
+    .then((res) => {
+      if (res && res.ok && res.presenceMap) {
+        const updatedMap = { ...readPresenceMap(), ...res.presenceMap };
+        writePresenceMap(updatedMap);
+      }
+    })
+    .catch(() => {});
+
+  // 2. Push to Google Apps Script if configured
+  if (isGasApiConfigured()) {
+    void postToGas("updatePresence", payload)
+      .then((gasRes) => {
+        if (gasRes && gasRes.ok && gasRes.presenceMap) {
+          const updatedMap = { ...readPresenceMap(), ...gasRes.presenceMap };
+          writePresenceMap(updatedMap);
+        }
+      })
+      .catch(() => {});
+  }
 }
 
 /** Remove current user presence on logout or page unload. */
@@ -127,6 +217,23 @@ export function removePresence(userId: string) {
   if (map[userId]) {
     delete map[userId];
     writePresenceMap(map);
+  }
+  void pushHeartbeatServerFn({
+    data: {
+      userId,
+      userName: "",
+      userRole: "teacher",
+      currentPath: "",
+      deviceInfo: "",
+      status: "offline",
+    },
+  }).catch(() => {});
+
+  if (isGasApiConfigured()) {
+    void postToGas("updatePresence", {
+      userId,
+      status: "offline",
+    }).catch(() => {});
   }
 }
 

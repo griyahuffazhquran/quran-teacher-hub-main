@@ -44,6 +44,7 @@ import { usePresenceList } from "@/hooks/use-presence";
 import { useSession } from "@/hooks/use-session";
 import { teacherRepo } from "@/lib/data/repositories";
 import { initials } from "@/lib/services/teacher-service";
+import { syncPresenceWithServer } from "@/lib/services/presence-service";
 import type { Teacher } from "@/lib/data/types";
 import type { UserPresenceRecord } from "@/lib/services/presence-service";
 
@@ -179,6 +180,15 @@ function ActiveUsersPage() {
         description="Monitoring real-time user dan pengajar yang sedang aktif membuka aplikasi."
         action={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void syncPresenceWithServer()}
+              className="h-9 text-xs gap-1.5 shadow-xs"
+            >
+              <RefreshCw className="size-3.5" />
+              <span>Refresh Status</span>
+            </Button>
             <Badge variant="outline" className="h-9 px-3 gap-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
               <span className="relative flex size-2.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75"></span>

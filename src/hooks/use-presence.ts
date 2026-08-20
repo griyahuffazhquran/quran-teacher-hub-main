@@ -3,9 +3,9 @@ import type { Teacher } from "@/lib/data/types";
 import {
   evaluatePresenceStatus,
   readPresenceMap,
-  removePresence,
   sendHeartbeat,
   subscribePresence,
+  syncPresenceWithServer,
   type UserPresenceRecord,
 } from "@/lib/services/presence-service";
 
@@ -59,9 +59,16 @@ export function usePresenceList() {
 
   const [now, setNow] = useState(Date.now());
 
-  // Force re-render every 3 seconds to keep "last seen" relative times and online states fresh
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 3000);
+    // Initial fetch from server
+    void syncPresenceWithServer();
+
+    // Poll server every 3 seconds to get live presence from all devices (HP, Tablet, PC)
+    const timer = setInterval(() => {
+      setNow(Date.now());
+      void syncPresenceWithServer();
+    }, 3000);
+
     return () => clearInterval(timer);
   }, []);
 

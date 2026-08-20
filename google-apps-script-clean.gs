@@ -39,6 +39,16 @@ function doGet(e) {
         return jsonResponse(getTableData("achievements"));
       case "getActivityLogs":
         return jsonResponse(getTableData("activityLogs"));
+      case "getPresence":
+        var cache = CacheService.getScriptCache();
+        var rawCache = cache.get("ACTIVE_PRESENCE") || "{}";
+        var mapData = {};
+        try { mapData = JSON.parse(rawCache); } catch(e) {}
+        var nowTime = new Date().getTime();
+        for (var pk in mapData) {
+          if (nowTime - mapData[pk].lastSeenAt > 45000) { delete mapData[pk]; }
+        }
+        return jsonResponse({ ok: true, presenceMap: mapData });
       default:
         return jsonResponse({ ok: false, error: "Action tidak dikenal: " + action });
     }
@@ -56,6 +66,33 @@ function doPost(e) {
 
     if (!action) {
       return jsonResponse({ ok: false, error: "Action wajib diisi pada payload POST." });
+    }
+
+    if (action === "updatePresence") {
+      var cache = CacheService.getScriptCache();
+      var rawCache = cache.get("ACTIVE_PRESENCE") || "{}";
+      var mapData = {};
+      try { mapData = JSON.parse(rawCache); } catch(e) {}
+      var nowTime = new Date().getTime();
+      if (data && data.userId) {
+        mapData[data.userId] = {
+          tabId: data.userId,
+          userId: data.userId,
+          userName: data.userName || "",
+          userRole: data.userRole || "teacher",
+          gender: data.gender || "",
+          position: data.position || "",
+          currentPath: data.currentPath || "/",
+          deviceInfo: data.deviceInfo || "HP / Tablet",
+          lastSeenAt: nowTime,
+          status: data.status || "online"
+        };
+      }
+      for (var pk in mapData) {
+        if (nowTime - mapData[pk].lastSeenAt > 45000) { delete mapData[pk]; }
+      }
+      cache.put("ACTIVE_PRESENCE", JSON.stringify(mapData), 60);
+      return jsonResponse({ ok: true, presenceMap: mapData });
     }
 
     if (action === "requestPasswordReset") {
