@@ -37,6 +37,9 @@ const TAB_ID =
     ? window.name || (window.name = `tab_${Math.random().toString(36).slice(2, 9)}_${Date.now()}`)
     : "server";
 
+let cachedPresenceMap: Record<string, UserPresenceRecord> = {};
+let rawCachedString: string | null = null;
+
 export function getDeviceInfo(): string {
   if (typeof window === "undefined" || !navigator) return "Desk/Mobile";
   const ua = navigator.userAgent;
@@ -65,20 +68,26 @@ export function getDeviceInfo(): string {
 }
 
 export function readPresenceMap(): Record<string, UserPresenceRecord> {
-  if (typeof window === "undefined") return {};
+  if (typeof window === "undefined") return cachedPresenceMap;
   try {
     const raw = localStorage.getItem(PRESENCE_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw) as Record<string, UserPresenceRecord>;
+    if (raw !== rawCachedString) {
+      rawCachedString = raw;
+      cachedPresenceMap = raw ? (JSON.parse(raw) as Record<string, UserPresenceRecord>) : {};
+    }
+    return cachedPresenceMap;
   } catch {
-    return {};
+    return cachedPresenceMap;
   }
 }
 
 export function writePresenceMap(map: Record<string, UserPresenceRecord>) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(PRESENCE_KEY, JSON.stringify(map));
+    const raw = JSON.stringify(map);
+    localStorage.setItem(PRESENCE_KEY, raw);
+    rawCachedString = raw;
+    cachedPresenceMap = map;
     broadcastChannel?.postMessage({ type: "PRESENCE_UPDATED", timestamp: Date.now() });
     emit();
   } catch {
@@ -89,7 +98,7 @@ export function writePresenceMap(map: Record<string, UserPresenceRecord>) {
 /** Update heartbeat for the current logged-in user. */
 export function sendHeartbeat(user: Teacher, statusOverride?: PresenceStatus) {
   if (typeof window === "undefined" || !user) return;
-  const map = readPresenceMap();
+  const map = { ...readPresenceMap() };
   const isVisible = document.visibilityState === "visible";
   const status: PresenceStatus =
     statusOverride ?? (isVisible ? "online" : "idle");
@@ -114,7 +123,7 @@ export function sendHeartbeat(user: Teacher, statusOverride?: PresenceStatus) {
 /** Remove current user presence on logout or page unload. */
 export function removePresence(userId: string) {
   if (typeof window === "undefined" || !userId) return;
-  const map = readPresenceMap();
+  const map = { ...readPresenceMap() };
   if (map[userId]) {
     delete map[userId];
     writePresenceMap(map);
@@ -152,6 +161,12 @@ export function subscribePresence(listener: () => void) {
 
   const handleStorage = (ev: StorageEvent) => {
     if (ev.key === PRESENCE_KEY) {
+      rawCachedString = ev.newValue;
+      try {
+        cachedPresenceMap = ev.newValue ? JSON.parse(ev.newValue) : {};
+      } catch {
+        cachedPresenceMap = {};
+      }
       emit();
     }
   };

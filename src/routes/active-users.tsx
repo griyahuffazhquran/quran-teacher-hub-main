@@ -391,14 +391,14 @@ function ActiveUsersPage() {
                           />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-sm text-foreground flex items-center gap-1.5">
+                          <div className="font-semibold text-sm text-foreground flex items-center gap-1.5">
                             {teacher.name}
                             {isCurrentSelf && (
                               <Badge variant="outline" className="text-[9px] px-1 py-0 bg-primary/10 text-primary border-primary/20">
                                 Anda
                               </Badge>
                             )}
-                          </p>
+                          </div>
                           <p className="text-xs text-muted-foreground truncate">
                             @{teacher.username || "guru"}
                           </p>
@@ -520,14 +520,14 @@ function ActiveUsersPage() {
                         />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-foreground text-sm truncate flex items-center gap-1.5">
+                        <div className="font-bold text-foreground text-sm truncate flex items-center gap-1.5">
                           {teacher.name}
                           {isCurrentSelf && (
                             <Badge variant="outline" className="text-[9px] px-1 py-0 bg-primary/10 text-primary">
                               Anda
                             </Badge>
                           )}
-                        </p>
+                        </div>
                         <p className="text-xs text-muted-foreground truncate">
                           {teacher.position || `@${teacher.username}`}
                         </p>
