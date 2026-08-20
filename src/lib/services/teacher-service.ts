@@ -111,6 +111,8 @@ export const emptyTeacherInput = (): TeacherInput => ({
   photoUrl: "",
 });
 
+import { toInputDate } from "@/lib/utils";
+
 export const toInput = (t: Teacher): TeacherInput => {
   const n = normalizeTeacher(t);
   return {
@@ -122,7 +124,7 @@ export const toInput = (t: Teacher): TeacherInput => {
     specialization: n.specialization,
     level: n.level,
     phone: n.phone ?? "",
-    joinedAt: n.joinedAt,
+    joinedAt: toInputDate(n.joinedAt),
     status: n.status,
     photoUrl: n.photoUrl ?? "",
   };

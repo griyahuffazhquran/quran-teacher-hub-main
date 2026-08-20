@@ -28,6 +28,8 @@ import {
   type ReportInput,
 } from "@/lib/services/report-service";
 
+import { toInputDate } from "@/lib/utils";
+
 const today = () => new Date().toISOString().slice(0, 10);
 
 const emptyInput = (): ReportInput => ({
@@ -43,7 +45,7 @@ const emptyInput = (): ReportInput => ({
 
 function fromReport(r: Report): ReportInput {
   return {
-    date: r.date,
+    date: toInputDate(r.date),
     teacherId: r.teacherId,
     material: r.material,
     materialDetail: r.materialDetail,

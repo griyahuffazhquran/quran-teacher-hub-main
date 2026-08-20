@@ -111,19 +111,11 @@ function formatDateDDMMYYYY(val: string | undefined): string {
   }
 }
 
+import { toInputDate } from "@/lib/utils";
+
 /** Parses date string safely from dd/mm/yyyy or ISO to YYYY-MM-DD */
 function parseGasDate(val: string | undefined): string {
-  if (!val) return "";
-  const s = String(val).trim();
-  if (!s) return "";
-  const match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (match) {
-    const day = match[1]!.padStart(2, "0");
-    const month = match[2]!.padStart(2, "0");
-    const year = match[3]!;
-    return `${year}-${month}-${day}`;
-  }
-  return s;
+  return toInputDate(val);
 }
 
 /** Normalize individual row objects safely based on repository collection name */

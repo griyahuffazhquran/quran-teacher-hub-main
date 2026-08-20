@@ -23,6 +23,8 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Target, TargetPeriod, TargetStatus, Teacher } from "@/lib/data/types";
 import { createTarget, updateTarget } from "@/lib/services/target-service";
 
+import { toInputDate } from "@/lib/utils";
+
 interface TargetFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -55,10 +57,10 @@ export function TargetFormDialog({
   const [period, setPeriod] = useState<TargetPeriod>(editing?.period || "bulanan");
   const [status, setStatus] = useState<TargetStatus>(editing?.status || "aktif");
   const [startDate, setStartDate] = useState<string>(
-    editing?.startDate || new Date().toISOString().slice(0, 10),
+    toInputDate(editing?.startDate),
   );
   const [dueDate, setDueDate] = useState<string>(
-    editing?.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+    toInputDate(editing?.dueDate),
   );
   const [targetValue, setTargetValue] = useState<string>(editing ? String(editing.targetValue) : "20");
   const [currentValue, setCurrentValue] = useState<string>(editing ? String(editing.currentValue) : "0");
@@ -72,8 +74,8 @@ export function TargetFormDialog({
       setDescription(editing.description || "");
       setPeriod(editing.period);
       setStatus(editing.status);
-      setStartDate(editing.startDate);
-      setDueDate(editing.dueDate);
+      setStartDate(toInputDate(editing.startDate));
+      setDueDate(toInputDate(editing.dueDate));
       setTargetValue(String(editing.targetValue));
       setCurrentValue(String(editing.currentValue));
       setUnit(editing.unit);
