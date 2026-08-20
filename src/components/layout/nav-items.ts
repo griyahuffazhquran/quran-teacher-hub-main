@@ -15,6 +15,7 @@ import type { UserRole } from "@/lib/data/types";
 
 export type NavItem = {
   label: string;
+  mobileLabel?: string;
   to: string;
   icon: LucideIcon;
   badgeKey?: "announcements" | "notifications";
@@ -62,21 +63,20 @@ export function getSecondaryNav(role?: UserRole): NavItem[] {
 export function getMobileNav(role?: UserRole): NavItem[] {
   if (role === "upgrader") {
     return [
-      { label: "Dashboard", to: "/", icon: LayoutDashboard },
+      { label: "Dashboard", mobileLabel: "Home", to: "/", icon: LayoutDashboard },
       { label: "Setoran", to: "/reports", icon: ClipboardList },
       { label: "Target", to: "/targets", icon: Target },
-      { label: "Leaderboard & Lencana", to: "/achievements", icon: Award },
-      { label: "Pengumuman", to: "/announcements", icon: Megaphone, badgeKey: "announcements" },
+      { label: "Leaderboard & Lencana", mobileLabel: "Prestasi", to: "/achievements", icon: Award },
       { label: "Profil", to: "/profile", icon: UserRound },
     ];
   }
 
   // Mobile Navbar for regular teachers
   return [
-    { label: "Dashboard", to: "/", icon: LayoutDashboard },
+    { label: "Dashboard", mobileLabel: "Home", to: "/", icon: LayoutDashboard },
     { label: "Setoran", to: "/reports", icon: ClipboardList },
     { label: "Target", to: "/targets", icon: Target },
-    { label: "Leaderboard & Lencana", to: "/achievements", icon: Award },
+    { label: "Leaderboard & Lencana", mobileLabel: "Prestasi", to: "/achievements", icon: Award },
     { label: "Profil", to: "/profile", icon: UserRound },
   ];
 }

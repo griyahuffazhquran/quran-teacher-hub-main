@@ -411,31 +411,36 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar (Item 8: Simplified Navbar) */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur-md lg:hidden">
-        <ul className={cn("grid", mobileNavItems.length === 4 ? "grid-cols-4" : "grid-cols-5")}>
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur-md lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <ul className="grid grid-cols-5 mx-auto max-w-lg">
           {mobileNavItems.map((item) => {
             const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
             const showBadge = item.badgeKey === "announcements" && hasAnnBadge;
+            const displayLabel = item.mobileLabel || item.label;
             return (
               <li key={item.to}>
                 <Link
                   to={item.to}
                   className={cn(
-                    "relative flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition-colors",
-                    active ? "text-primary font-semibold" : "text-muted-foreground",
+                    "relative flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-[10px] font-medium transition-colors active:scale-95",
+                    active ? "text-primary font-bold" : "text-muted-foreground",
                   )}
                 >
+                  {/* Active Pill Indicator */}
+                  {active && (
+                    <span className="absolute top-0.5 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-full bg-primary animate-fade-in" />
+                  )}
                   <div className="relative flex items-center justify-center">
-                    <item.icon className={cn("size-5 transition-transform", active && "scale-110")} />
+                    <item.icon className={cn("size-[22px] transition-all duration-200", active && "scale-110")} />
                     {showBadge && (
-                      <span className="absolute -top-1 -right-1 flex size-2">
+                      <span className="absolute -top-1 -right-1.5 flex size-2">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
                         <span className="relative inline-flex size-2 rounded-full bg-destructive border border-background"></span>
                       </span>
                     )}
                   </div>
-                  <span>{item.label}</span>
+                  <span className="truncate max-w-full px-0.5 leading-tight">{displayLabel}</span>
                 </Link>
               </li>
             );
