@@ -259,7 +259,7 @@ function LoginPage() {
 
             <div className="space-y-1">
               <Label htmlFor="reset-phone" className="text-xs font-semibold">
-                No HP / WhatsApp (opsional)
+                No HP (opsional)
               </Label>
               <Input
                 id="reset-phone"

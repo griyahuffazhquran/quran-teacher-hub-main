@@ -373,7 +373,7 @@ function ProfilePage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">Nomor WhatsApp / HP</Label>
+                  <Label className="text-xs font-semibold">Nomor HP</Label>
                   <Input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}

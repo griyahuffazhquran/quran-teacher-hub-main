@@ -19,7 +19,6 @@ export default defineConfig({
     preset: "netlify",
     externals: {
       external: ["@aws-sdk/client-s3"],
-      inline: ["qrcode-terminal"],
     },
   },
   vite: {

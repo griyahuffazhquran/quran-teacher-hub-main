@@ -2,11 +2,6 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { bootstrapWhatsApp } from "./lib/whatsapp-server";
-
-// Inisialisasi WhatsApp client saat server start
-bootstrapWhatsApp();
-
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
