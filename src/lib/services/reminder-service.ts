@@ -1,5 +1,6 @@
 import { reminderRepo, targetRepo } from "@/lib/data/repositories";
 import type { Reminder, ReminderFrequency } from "@/lib/data/types";
+import { pushMutationToGas } from "./gas-api-service";
 import { logActivity, notify } from "./notification-service";
 
 export type CreateReminderInput = {
@@ -39,6 +40,8 @@ export function createReminder(input: CreateReminderInput, creatorId?: string): 
     dismissed: false,
   });
 
+  pushMutationToGas("reminders", "create", reminder);
+
   notify({
     title: `Pengingat Dijadwalkan: ${input.title}`,
     body: `Pengingat untuk target "${targetTitle}" telah diatur pada ${new Date(input.remindAt).toLocaleDateString("id-ID")}.`,
@@ -64,10 +67,17 @@ export function dismissReminder(id: string): Reminder | undefined {
   const reminder = reminderRepo.get(id);
   if (!reminder) return undefined;
 
-  const updated = reminderRepo.update(id, { dismissed: true });
+  const updated = reminderRepo.update(id, { dismissed: !reminder.dismissed });
+  if (updated) {
+    pushMutationToGas("reminders", "update", updated);
+  }
   return updated;
 }
 
 export function deleteReminder(id: string): void {
-  reminderRepo.remove(id);
+  const reminder = reminderRepo.get(id);
+  if (reminder) {
+    reminderRepo.remove(id);
+    pushMutationToGas("reminders", "delete", { id });
+  }
 }

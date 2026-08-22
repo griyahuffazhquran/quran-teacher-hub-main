@@ -37,6 +37,8 @@ function doGet(e) {
         return jsonResponse(getTableData("notifications"));
       case "getAchievements":
         return jsonResponse(getTableData("achievements"));
+      case "getMasterBadges":
+        return jsonResponse(getTableData("masterBadges"));
       case "getActivityLogs":
         return jsonResponse(getTableData("activityLogs"));
       case "getPresence":

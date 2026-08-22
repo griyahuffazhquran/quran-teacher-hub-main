@@ -3,6 +3,7 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  Minus,
   MoreVertical,
   Pencil,
   Plus,
@@ -70,6 +71,12 @@ export function TargetCard({
   const handleQuickAddProgress = (e: React.MouseEvent) => {
     e.stopPropagation();
     const nextVal = Math.min(target.targetValue, target.currentValue + 1);
+    updateTargetProgress(target.id, nextVal);
+  };
+
+  const handleQuickSubtractProgress = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextVal = Math.max(0, target.currentValue - 1);
     updateTargetProgress(target.id, nextVal);
   };
 
@@ -163,7 +170,7 @@ export function TargetCard({
           />
         </div>
 
-        {/* Footer info: Due date & Quick Progress Button */}
+        {/* Footer info: Due date & Quick Progress Buttons */}
         <div className="flex items-center justify-between pt-1 border-t border-border/60 text-[11px] text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="size-3 text-muted-foreground shrink-0" />
@@ -171,15 +178,27 @@ export function TargetCard({
           </div>
 
           {target.status === "aktif" && canEdit && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleQuickAddProgress}
-              className="h-6 px-2 text-[10px] font-medium gap-1 text-primary hover:bg-primary/10"
-              title={`Tambah 1 ${target.unit}`}
-            >
-              <Plus className="size-3" /> 1 {target.unit}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleQuickSubtractProgress}
+                disabled={target.currentValue <= 0}
+                className="h-6 px-1.5 text-[10px] font-medium gap-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                title={`Kurangi 1 ${target.unit}`}
+              >
+                <Minus className="size-3" /> 1 {target.unit}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleQuickAddProgress}
+                className="h-6 px-1.5 text-[10px] font-medium gap-0.5 text-primary hover:bg-primary/10"
+                title={`Tambah 1 ${target.unit}`}
+              >
+                <Plus className="size-3" /> 1 {target.unit}
+              </Button>
+            </div>
           )}
         </div>
       </CardContent>

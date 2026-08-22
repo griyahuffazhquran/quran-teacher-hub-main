@@ -408,23 +408,24 @@ function Page() {
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">
-                        {!r.dismissed ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 text-xs font-medium gap-1 text-emerald-600"
-                            onClick={() => {
-                              dismissReminder(r.id);
+                        <Button
+                          size="sm"
+                          variant={r.dismissed ? "secondary" : "outline"}
+                          className={`h-8 text-xs font-medium gap-1 ${
+                            r.dismissed ? "text-muted-foreground hover:text-foreground" : "text-emerald-600"
+                          }`}
+                          onClick={() => {
+                            const updated = dismissReminder(r.id);
+                            if (updated?.dismissed) {
                               toast.success("Pengingat ditandai selesai.");
-                            }}
-                          >
-                            <CheckCircle2 className="size-3.5" /> Selesai
-                          </Button>
-                        ) : (
-                          <Badge variant="secondary" className="text-[10px]">
-                            Selesai
-                          </Badge>
-                        )}
+                            } else {
+                              toast.info("Pengingat diaktifkan kembali.");
+                            }
+                          }}
+                        >
+                          <CheckCircle2 className="size-3.5" />
+                          <span>{r.dismissed ? "Batal Selesai" : "Selesai"}</span>
+                        </Button>
                         <Button
                           size="icon"
                           variant="ghost"

@@ -59,6 +59,7 @@ export function computeInstitutionalAnalytics(
   // Material Distribution
   const materialCounts: Record<MaterialType, number> = {
     tahfizh: 0,
+    murajaah: 0,
     matn: 0,
     hadits: 0,
     lainnya: 0,
@@ -74,6 +75,7 @@ export function computeInstitutionalAnalytics(
   // Target statistics
   const totalTargets = activeT.length;
   const completedTargets = activeT.filter((t) => t.status === "tercapai").length;
+  const inProgressTargets = activeT.filter((t) => t.status === "aktif").length;
   const targetCompletionRate =
     totalTargets > 0 ? Math.round((completedTargets / totalTargets) * 100) : 0;
 
@@ -149,6 +151,7 @@ export function computeInstitutionalAnalytics(
     targetCompletionRate,
     completedTargets,
     totalTargets,
+    inProgressTargets,
     homeworkResolutionRate,
     completedHomeworks,
     totalHomeworks,
@@ -158,14 +161,12 @@ export function computeInstitutionalAnalytics(
 }
 
 export function generateExecutiveSummaryMarkdown(analytics: ReturnType<typeof computeInstitutionalAnalytics>): string {
-  return `### Ringkasan Evaluasi Upgrading Lembaga
-**Griya Huffazh Quran**
+  return `### Laporan Ringkasan Analitik Griya Huffazh Quran
 
-* **Total Setoran Terverifikasi**: ${analytics.totalReports} setoran
-* **Jumlah Pengajar Aktif**: ${analytics.totalTeachers} ustadz/ustadzah
-* **Rata-rata Nilai Lembaga**: ${analytics.avgInstitutionalScore} / 100
-* **Tingkat Tuntas Target Upgrading**: ${analytics.targetCompletionRate}% (${analytics.completedTargets}/${analytics.totalTargets} target)
-* **Tingkat Tuntas PR/Tugas**: ${analytics.homeworkResolutionRate}% (${analytics.completedHomeworks}/${analytics.totalHomeworks} PR selesai)
+- **Total Setoran Evaluasi**: ${analytics.totalReports} setoran
+- **Guru Aktif Menyetor**: ${analytics.totalTeachers} Ustadz/Ustadzah
+- **Rata-rata Skor Lembaga**: ${analytics.avgInstitutionalScore} / 100
+- **Tingkat Kelulusan Target**: ${analytics.targetCompletionRate}% (${analytics.completedTargets} dari ${analytics.totalTargets} target)
 
 #### Distribusi Nilai Setoran:
 - **Predikat A (Mumtaz)**: ${analytics.gradeCounts.A} (${analytics.gradePercentages.A}%)
@@ -175,6 +176,7 @@ export function generateExecutiveSummaryMarkdown(analytics: ReturnType<typeof co
 
 #### Sebaran Materi Upgrading:
 - **Tahfizh Al-Qur'an**: ${analytics.materialCounts.tahfizh} setoran
+- **Muraja'ah**: ${analytics.materialCounts.murajaah} setoran
 - **Matn**: ${analytics.materialCounts.matn} setoran
 - **Hadits**: ${analytics.materialCounts.hadits} setoran
 - **Lainnya**: ${analytics.materialCounts.lainnya} setoran

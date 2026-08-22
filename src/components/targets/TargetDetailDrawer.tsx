@@ -315,24 +315,22 @@ export function TargetDetailDrawer({
                     </div>
 
                     <div className="flex items-center gap-1 shrink-0">
-                      {!r.dismissed ? (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-7 text-muted-foreground hover:text-emerald-500"
-                          onClick={() => {
-                            dismissReminder(r.id);
+                      <Button
+                        size="icon"
+                        variant={r.dismissed ? "secondary" : "ghost"}
+                        className={`size-7 ${r.dismissed ? "text-emerald-600 bg-emerald-500/10" : "text-muted-foreground hover:text-emerald-500"}`}
+                        onClick={() => {
+                          const updated = dismissReminder(r.id);
+                          if (updated?.dismissed) {
                             toast.success("Pengingat ditandai selesai.");
-                          }}
-                          title="Tandai selesai"
-                        >
-                          <CheckCircle2 className="size-3.5" />
-                        </Button>
-                      ) : (
-                        <Badge variant="secondary" className="text-[9px]">
-                          Selesai
-                        </Badge>
-                      )}
+                          } else {
+                            toast.info("Pengingat diaktifkan kembali.");
+                          }
+                        }}
+                        title={r.dismissed ? "Aktifkan kembali pengingat" : "Tandai selesai"}
+                      >
+                        <CheckCircle2 className="size-3.5" />
+                      </Button>
                       <Button
                         size="icon"
                         variant="ghost"

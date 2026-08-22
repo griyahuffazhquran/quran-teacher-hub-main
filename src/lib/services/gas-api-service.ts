@@ -348,7 +348,6 @@ export async function syncAllFromGas(): Promise<{ ok: boolean; count?: number; e
 
     for (const r of results) {
       if (r.ok) syncedCount++;
-      if (r.error) lastError = r.error;
     }
 
     hydrateAll();
@@ -361,6 +360,22 @@ export async function syncAllFromGas(): Promise<{ ok: boolean; count?: number; e
   } catch (err: any) {
     return { ok: false, error: err?.message || "Gagal sinkronisasi data dari Google Sheets." };
   }
+}
+
+/** Fetch masterBadges collection from Google Sheets */
+export async function fetchMasterBadgesFromGas(): Promise<any[]> {
+  if (!isGasApiConfigured()) return [];
+  try {
+    const res = await fetchFromGas("getMasterBadges");
+    if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+      return res.data
+        .map((row: any) => normalizeRow("masterBadges", row))
+        .filter(Boolean);
+    }
+  } catch (err) {
+    console.warn("Sinkronisasi masterBadges dilewati:", err);
+  }
+  return [];
 }
 
 /** Login via Google Apps Script API */
@@ -543,6 +558,20 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         "Updated At": updatedAt,
       };
 
+    case "masterBadges":
+      return {
+        ID: item.code || item.id,
+        "Kode Unik Lencana": item.code || "",
+        "Judul Lencana": item.title || "",
+        Deskripsi: item.description || "",
+        Kategori: item.category || "setoran",
+        Icon: item.icon || "Award",
+        "Poin XP": item.points || 0,
+        "Status Dihapus": statusDihapus,
+        "Created At": createdAt,
+        "Updated At": updatedAt,
+      };
+
     case "activityLogs":
       return {
         ID: id,
@@ -568,12 +597,15 @@ export async function pushMutationToGas(
   mutationType: "create" | "update" | "delete",
   item: any,
 ): Promise<void> {
-  if (!isGasApiConfigured() || !item || !item.id) return;
+  const itemId = item?.id || item?.code || item?.ID;
+  if (!isGasApiConfigured() || !item || !itemId) return;
 
   const gasData = toGasRow(repoName, item);
 
   let action = "";
-  if (mutationType === "create") {
+  if (repoName === "masterBadges") {
+    action = mutationType === "create" ? "addMasterBadge" : mutationType === "update" ? "updateMasterBadge" : "deleteMasterBadge";
+  } else if (mutationType === "create") {
     switch (repoName) {
       case "teachers":
         action = "addTeacher";
@@ -647,7 +679,7 @@ export async function pushMutationToGas(
   if (!action) return;
 
   try {
-    const res = await postToGas(action, { id: item.id, data: gasData });
+    const res = await postToGas(action, { id: itemId, data: gasData });
     if (res.ok) {
       console.log(`[GAS Sync] ${mutationType} ${repoName} (${item.id}) pushed to Google Sheets successfully.`);
     } else {

@@ -55,11 +55,24 @@ export function validateReport(
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true };
 }
 
-function toRow(input: ReportInput, mustami: Teacher, teacherNameStr?: string) {
+function ensureDateTimeISO(inputDate: string, existingISO?: string): string {
+  if (!inputDate) return new Date().toISOString();
+  const trimmed = inputDate.trim();
+  if (trimmed.includes("T") && trimmed.length > 10) return trimmed;
+
+  const now = new Date();
+  const timePart = existingISO && existingISO.includes("T")
+    ? (existingISO.split("T")[1] || "")
+    : `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}.${String(now.getMilliseconds()).padStart(3, "0")}Z`;
+
+  return `${trimmed}T${timePart || "00:00:00.000Z"}`;
+}
+
+function toRow(input: ReportInput, mustami: Teacher, teacherNameStr?: string, existingISO?: string) {
   const homework = input.homework?.trim();
   const mustamiNote = input.mustamiNote?.trim();
   return {
-    date: input.date,
+    date: ensureDateTimeISO(input.date, existingISO),
     teacherId: input.teacherId,
     teacherName: teacherNameStr || "",
     mustamiId: mustami.id,
@@ -121,7 +134,7 @@ export function updateReport(
   assessedName: string,
 ): Report | undefined {
   const existing = reportRepo.get(id);
-  const row = toRow(input, mustami, assessedName);
+  const row = toRow(input, mustami, assessedName, existing?.date);
   const updated = reportRepo.update(id, {
     ...row,
     homeworkDone: existing?.homeworkDone ?? false,

@@ -121,17 +121,65 @@ export function sortByDateDesc<T extends { date: string }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 }
 
+export function formatDateTime(dateISO: string | undefined | null): { date: string; time: string; full: string } {
+  if (!dateISO) return { date: "—", time: "", full: "—" };
+  const s = String(dateISO).trim();
+  if (!s) return { date: "—", time: "", full: "—" };
+
+  let parsableDate = s;
+  const dmyMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (dmyMatch) {
+    const day = dmyMatch[1]!.padStart(2, "0");
+    const month = dmyMatch[2]!.padStart(2, "0");
+    const year = dmyMatch[3]!;
+    parsableDate = `${year}-${month}-${day}`;
+  }
+
+  try {
+    const d = new Date(parsableDate);
+    if (isNaN(d.getTime())) return { date: s, time: "", full: s };
+
+    const dateStr = d.toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+    const hasTime = s.includes("T") || s.includes(":");
+    if (!hasTime) {
+      return { date: dateStr, time: "", full: dateStr };
+    }
+
+    const timeStr = d.toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    return {
+      date: dateStr,
+      time: `${timeStr} WIB`,
+      full: `${dateStr} • ${timeStr} WIB`,
+    };
+  } catch {
+    return { date: s, time: "", full: s };
+  }
+}
+
 export const materialLabel: Record<MaterialType, string> = {
   tahfizh: "Tahfizh Al-Qur'an",
+  murajaah: "Muraja'ah",
   matn: "Matn",
   hadits: "Hadits",
   lainnya: "Lainnya",
 };
 
-export const materialOptions = Object.entries(materialLabel).map(([value, label]) => ({
-  value: value as MaterialType,
-  label,
-}));
+export const materialOptions: { value: MaterialType; label: string }[] = [
+  { value: "tahfizh", label: "Tahfizh Al-Qur'an" },
+  { value: "murajaah", label: "Muraja'ah" },
+  { value: "matn", label: "Matn" },
+  { value: "hadits", label: "Hadits" },
+  { value: "lainnya", label: "Lainnya" },
+];
 
 export const gradeOptions: Grade[] = ["A", "B", "C", "D"];
 

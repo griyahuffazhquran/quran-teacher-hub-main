@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Award,
@@ -49,6 +49,7 @@ import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { useCollection } from "@/hooks/use-repository";
 import { useSession } from "@/hooks/use-session";
 import { achievementRepo, reportRepo, targetRepo, teacherRepo } from "@/lib/data/repositories";
+import { fetchMasterBadgesFromGas, pushMutationToGas } from "@/lib/services/gas-api-service";
 import {
   calculateTeacherXpAndRank,
   masterAchievements as initialMasterAchievements,
@@ -81,8 +82,38 @@ export function AchievementsPage() {
   const reports = useMemo(() => activeReports(reportRows), [reportRows]);
   const targets = useMemo(() => activeTargets(targetRows), [targetRows]);
 
-  // Master Achievements State
-  const [masterBadges, setMasterBadges] = useState<AchievementDefinition[]>(initialMasterAchievements);
+  // Master Achievements State (Persisted in localStorage & Synced with Google Sheets)
+  const [masterBadges, setMasterBadges] = useState<AchievementDefinition[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("griya_master_badges");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    return initialMasterAchievements;
+  });
+
+  useEffect(() => {
+    fetchMasterBadgesFromGas().then((remoteBadges) => {
+      if (remoteBadges && remoteBadges.length > 0) {
+        setMasterBadges(remoteBadges);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("griya_master_badges", JSON.stringify(remoteBadges));
+        }
+      }
+    });
+  }, []);
+
+  const saveMasterBadges = (newBadges: AchievementDefinition[]) => {
+    setMasterBadges(newBadges);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("griya_master_badges", JSON.stringify(newBadges));
+    }
+  };
+
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [editingBadge, setEditingBadge] = useState<AchievementDefinition | null>(null);
   const [deleteBadgeTarget, setDeleteBadgeTarget] = useState<AchievementDefinition | null>(null);
@@ -208,9 +239,12 @@ export function AchievementsPage() {
     }
 
     if (editingBadge) {
-      setMasterBadges((prev) =>
-        prev.map((b) => (b.code === editingBadge.code ? { ...b, title, description, category, points } : b)),
+      const updatedList = masterBadges.map((b) =>
+        b.code === editingBadge.code ? { ...b, title, description, category, points } : b,
       );
+      saveMasterBadges(updatedList);
+      const updatedBadge = updatedList.find((b) => b.code === editingBadge.code);
+      if (updatedBadge) pushMutationToGas("masterBadges", "update", updatedBadge);
       toast.success("Lencana master berhasil diperbarui.");
     } else {
       const newB: AchievementDefinition = {
@@ -221,7 +255,9 @@ export function AchievementsPage() {
         icon: "Award",
         points: Number(points) || 0,
       };
-      setMasterBadges((prev) => [...prev, newB]);
+      const updatedList = [...masterBadges, newB];
+      saveMasterBadges(updatedList);
+      pushMutationToGas("masterBadges", "create", newB);
       toast.success("Lencana master baru berhasil ditambahkan!");
     }
     setBadgeDialogOpen(false);
@@ -230,7 +266,9 @@ export function AchievementsPage() {
   // Delete Badge
   const handleDeleteBadge = () => {
     if (!deleteBadgeTarget) return;
-    setMasterBadges((prev) => prev.filter((b) => b.code !== deleteBadgeTarget.code));
+    const updatedList = masterBadges.filter((b) => b.code !== deleteBadgeTarget.code);
+    saveMasterBadges(updatedList);
+    pushMutationToGas("masterBadges", "delete", deleteBadgeTarget);
     setDeleteBadgeTarget(null);
     toast.success("Lencana master berhasil dihapus.");
   };
@@ -315,7 +353,7 @@ export function AchievementsPage() {
 
     if (!badgeDef || !targetTeacher) return;
 
-    achievementRepo.create({
+    const createdBadge = achievementRepo.create({
       teacherId: targetTeacher.id,
       code: badgeDef.code,
       title: badgeDef.title,
@@ -325,6 +363,8 @@ export function AchievementsPage() {
       points: badgeDef.points,
       unlockedAt: new Date().toISOString(),
     });
+
+    pushMutationToGas("achievements", "create", createdBadge);
 
     notify({
       title: `Hadiah Lencana dari Pengurus! 🏆`,
@@ -850,6 +890,73 @@ export function AchievementsPage() {
                 <span className="text-xs font-bold uppercase">Total akumulasi xp saat ini:</span>
                 <span className="text-lg font-extrabold">{selectedTeacherDetail.totalXp} XP</span>
               </div>
+            </div>
+
+            {/* Unlocked Badges List & Manual Revocation */}
+            <div className="space-y-2 pt-2 border-t border-border">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Award className="size-4 text-amber-500" /> Lencana Terbuka Guru Ini
+                </h4>
+                <Badge variant="secondary" className="text-[10px]">
+                  {achievementRows.filter((a) => !a.isDeleted && a.teacherId === selectedTeacherDetail.teacher.id).length} Lencana
+                </Badge>
+              </div>
+
+              {achievementRows.filter((a) => !a.isDeleted && a.teacherId === selectedTeacherDetail.teacher.id).length === 0 ? (
+                <p className="text-xs text-muted-foreground italic py-1">
+                  Belum ada lencana khusus yang dimiliki guru ini.
+                </p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {achievementRows
+                    .filter((a) => !a.isDeleted && a.teacherId === selectedTeacherDetail.teacher.id)
+                    .map((badge) => (
+                      <div
+                        key={badge.id}
+                        className="p-2.5 rounded-xl border border-border bg-card flex items-center justify-between gap-2 shadow-2xs"
+                      >
+                        <div className="min-w-0 space-y-0.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-xs text-foreground truncate">{badge.title}</span>
+                            {badge.points > 0 && (
+                              <Badge className="bg-emerald-600 text-white text-[9px] px-1 py-0 font-bold">
+                                +{badge.points} XP
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground line-clamp-1">{badge.description}</p>
+                        </div>
+
+                        {isUpgrader && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-7 text-muted-foreground hover:text-destructive shrink-0"
+                            title="Cabut / Hapus Lencana dari guru ini"
+                            onClick={() => {
+                              achievementRepo.remove(badge.id);
+                              pushMutationToGas("achievements", "delete", { id: badge.id });
+                              toast.success(`Lencana "${badge.title}" berhasil dicabut dari ${selectedTeacherDetail.teacher.name}.`);
+                              // Recalculate popup stats
+                              const updatedStats = calculateTeacherXpAndRank(
+                                selectedTeacherDetail.teacher.id,
+                                reports,
+                                targets,
+                                achievementRows.filter((a) => a.id !== badge.id),
+                                customRanks,
+                                { xpPerSetoran, bonusGradeA, xpPerMustami, xpPerTarget },
+                              );
+                              setSelectedTeacherDetail((prev) => (prev ? { ...prev, ...updatedStats } : null));
+                            }}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
 
             {/* Quick Actions Footer */}

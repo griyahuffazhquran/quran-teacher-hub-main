@@ -411,9 +411,19 @@ function Dashboard() {
       </div>
 
       {/* Dashboard Main Content with Tabs */}
-      <Tabs defaultValue="progress" className="space-y-4">
+      <Tabs defaultValue={isUpgrader ? "all" : "progress"} className="space-y-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
+            {isUpgrader && (
+              <TabsTrigger value="all" className="text-xs font-semibold gap-1.5">
+                <span>Semua Setoran Lembaga</span>
+                {ready && (
+                  <Badge variant="secondary" className="px-1.5 py-0 text-[10px] rounded-full">
+                    {reports.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            )}
             <TabsTrigger value="progress" className="text-xs font-semibold gap-1.5">
               <span>My Upgrading Progress</span>
               {ready && (
@@ -430,16 +440,6 @@ function Dashboard() {
                 </Badge>
               )}
             </TabsTrigger>
-            {isUpgrader && (
-              <TabsTrigger value="all" className="text-xs font-semibold gap-1.5">
-                <span>Semua Setoran Lembaga</span>
-                {ready && (
-                  <Badge variant="secondary" className="px-1.5 py-0 text-[10px] rounded-full">
-                    {reports.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            )}
           </TabsList>
 
           {/* View Switcher Toggle */}

@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate, materialLabel, parseGrade, statusLabel } from "@/lib/data/selectors";
+import { formatDate, formatDateTime, materialLabel, parseGrade, statusLabel } from "@/lib/data/selectors";
 import type { Report, Teacher } from "@/lib/data/types";
 
 const gradeTone: Record<Report["grade"], "default" | "secondary" | "destructive"> = {
@@ -59,6 +59,7 @@ export function ReportTable({
               teachers.find((t) => t.id === report.teacherId)?.name ?? "—";
             const isHomeworkToggleable =
               report.homework && (canEdit || report.teacherId === currentUserId);
+            const dt = formatDateTime(report.date);
 
             return (
               <TableRow
@@ -67,7 +68,10 @@ export function ReportTable({
                 onClick={() => onSelect?.(report)}
               >
                 <TableCell className="text-xs text-muted-foreground font-medium whitespace-nowrap">
-                  {formatDate(report.date)}
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-foreground">{dt.date}</span>
+                    {dt.time && <span className="text-[10px] text-muted-foreground">{dt.time}</span>}
+                  </div>
                 </TableCell>
                 <TableCell className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
                   {assessedTeacher}

@@ -25,7 +25,7 @@ export type Teacher = {
 };
 
 /** Jenis materi setoran (Phase 3). */
-export type MaterialType = "tahfizh" | "matn" | "hadits" | "lainnya";
+export type MaterialType = "tahfizh" | "murajaah" | "matn" | "hadits" | "lainnya";
 export type Grade = "A" | "B" | "C" | "D";
 export type ReportStatus = "selesai" | "perlu_perbaikan" | "pr_aktif";
 
