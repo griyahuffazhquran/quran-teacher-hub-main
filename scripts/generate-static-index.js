@@ -41,6 +41,7 @@ const htmlContent = `<!DOCTYPE html>
 
 fs.writeFileSync(path.join(distDir, "index.html"), htmlContent, "utf8");
 fs.writeFileSync(path.join(distDir, "404.html"), htmlContent, "utf8");
+fs.writeFileSync(path.join(distDir, "static-site.html"), htmlContent, "utf8");
 fs.writeFileSync(path.join(distDir, ".nojekyll"), "", "utf8");
 
-console.log("Successfully generated dist/index.html, dist/404.html, and dist/.nojekyll with runtime scripts!");
+console.log("Successfully generated dist/index.html, dist/404.html, dist/static-site.html, and dist/.nojekyll with runtime scripts!");

@@ -7,6 +7,17 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  vite: {
+    base: process.env.VITE_BASE_PATH || "/",
+    build: {
+      rollupOptions: {
+        external: ["@aws-sdk/client-s3"],
+      },
+      rolldownOptions: {
+        external: ["@aws-sdk/client-s3"],
+      },
+    },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
@@ -21,14 +32,4 @@ export default defineConfig({
       external: ["@aws-sdk/client-s3"],
     },
   } as any,
-  vite: {
-    build: {
-      rollupOptions: {
-        external: ["@aws-sdk/client-s3"],
-      },
-      rolldownOptions: {
-        external: ["@aws-sdk/client-s3"],
-      },
-    },
-  },
 });
