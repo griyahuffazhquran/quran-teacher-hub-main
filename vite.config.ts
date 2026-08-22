@@ -23,9 +23,9 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
-  // Deploy target configured for Cloudflare Pages.
+  // Deploy target configured for Cloudflare Workers.
   nitro: {
-    preset: process.env.NITRO_PRESET || "cloudflare-pages",
+    preset: process.env.NITRO_PRESET || "cloudflare-module",
     cloudflare: {
       nodeCompat: true,
     },

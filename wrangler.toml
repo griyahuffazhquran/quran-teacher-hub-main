@@ -1,4 +1,8 @@
-name = "quran-teacher-hub"
-pages_build_output_dir = "dist"
+name = "quran-teacher-hub-main"
+main = ".output/server/index.mjs"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
+
+[assets]
+binding = "ASSETS"
+directory = ".output/public"
