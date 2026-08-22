@@ -143,8 +143,11 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+const fallbackQueryClient = new QueryClient();
+
 function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
+  const context = Route.useRouteContext();
+  const queryClient = context?.queryClient ?? fallbackQueryClient;
 
   useEffect(() => {
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
