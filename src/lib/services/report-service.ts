@@ -194,10 +194,12 @@ export function restoreReport(id: string, actorId: string): Report | undefined {
 
 /** Setoran yang diterima guru (My Upgrading Progress). */
 export function progressOf(reports: Report[], teacherId: string): Report[] {
-  return reports.filter((r) => !r.isDeleted && r.teacherId === teacherId);
+  if (!Array.isArray(reports)) return [];
+  return reports.filter((r) => Boolean(r && !r.isDeleted && r.teacherId === teacherId));
 }
 
 /** Setoran yang dinilai guru sebagai mustami' (My Assessment Activity). */
 export function assessmentsOf(reports: Report[], teacherId: string): Report[] {
-  return reports.filter((r) => !r.isDeleted && r.mustamiId === teacherId);
+  if (!Array.isArray(reports)) return [];
+  return reports.filter((r) => Boolean(r && !r.isDeleted && r.mustamiId === teacherId));
 }

@@ -89,20 +89,23 @@ export function averageGrade(reports: Report[]): Grade | null {
 }
 
 export function activeReports(reports: Report[]): Report[] {
-  return reports.filter((r) => !r.isDeleted);
+  if (!Array.isArray(reports)) return [];
+  return reports.filter((r) => Boolean(r && !r.isDeleted));
 }
 
 export function activeTeachers(teachers: Teacher[]): Teacher[] {
-  return teachers.filter((t) => !t.isDeleted && t.status !== "nonaktif");
+  if (!Array.isArray(teachers)) return [];
+  return teachers.filter((t) => Boolean(t && !t.isDeleted && t.status !== "nonaktif"));
 }
 
 export function activeTargets(targets: Target[]): Target[] {
-  return targets.filter((t) => !t.isDeleted);
+  if (!Array.isArray(targets)) return [];
+  return targets.filter((t) => Boolean(t && !t.isDeleted));
 }
 
-
 export function pendingHomework(reports: Report[]): Report[] {
-  return reports.filter((r) => !r.homeworkDone && !!r.homework);
+  if (!Array.isArray(reports)) return [];
+  return reports.filter((r) => Boolean(r && !r.homeworkDone && !!r.homework));
 }
 
 export function targetProgress(target: Target): number {
