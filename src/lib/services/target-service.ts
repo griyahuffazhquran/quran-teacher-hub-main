@@ -21,7 +21,7 @@ export type UpdateTargetInput = Partial<CreateTargetInput> & {
 export function listActiveTargets(targets: Target[]): Target[] {
   return targets
     .filter((t) => !t.isDeleted)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
 }
 
 export function targetsForTeacher(targets: Target[], teacherId: string): Target[] {

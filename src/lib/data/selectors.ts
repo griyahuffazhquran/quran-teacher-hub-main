@@ -118,7 +118,7 @@ export function unreadCount(items: NotificationItem[]): number {
 }
 
 export function sortByDateDesc<T extends { date: string }>(rows: T[]): T[] {
-  return [...rows].sort((a, b) => b.date.localeCompare(a.date));
+  return [...rows].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 }
 
 export const materialLabel: Record<MaterialType, string> = {
