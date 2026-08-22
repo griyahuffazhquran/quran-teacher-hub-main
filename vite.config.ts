@@ -8,12 +8,9 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
   vite: {
-    base: process.env.VITE_BASE_PATH || "/",
+    base: process.env["VITE_BASE_PATH"] || "/",
     build: {
       rollupOptions: {
-        external: ["@aws-sdk/client-s3"],
-      },
-      rolldownOptions: {
         external: ["@aws-sdk/client-s3"],
       },
     },
@@ -25,7 +22,7 @@ export default defineConfig({
   },
   // Deploy target configured for Cloudflare Workers.
   nitro: {
-    preset: process.env.NITRO_PRESET || "cloudflare-module",
+    preset: process.env["NITRO_PRESET"] || "cloudflare-module",
     cloudflare: {
       nodeCompat: true,
     },
@@ -34,3 +31,4 @@ export default defineConfig({
     },
   } as any,
 });
+
