@@ -85,7 +85,7 @@ function Page() {
       return matchQ && matchStatus && matchRole;
     });
     return [...filtered].sort((a, b) => {
-      if (sort === "name") return a.name.localeCompare(b.name);
+      if (sort === "name") return (a.name || "").localeCompare(b.name || "");
       if (sort === "joinedAt") return (b.createdAt || b.joinedAt || "").localeCompare(a.createdAt || a.joinedAt || "");
       return countFor(b.id) - countFor(a.id);
     });

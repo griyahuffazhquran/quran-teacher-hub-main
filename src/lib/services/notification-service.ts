@@ -53,7 +53,7 @@ export function logActivity(input: {
 export function notificationsFor(rows: NotificationItem[], userId?: string): NotificationItem[] {
   return rows
     .filter((n) => !n.userId || n.userId === userId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
 }
 
 export function markAsRead(id: string): NotificationItem | undefined {
@@ -83,5 +83,5 @@ export function clearAllNotifications(userId?: string): void {
 }
 
 export function listActivityLogs(logs: ActivityLog[], limit = 20): ActivityLog[] {
-  return [...logs].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit);
+  return [...logs].sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")).slice(0, limit);
 }

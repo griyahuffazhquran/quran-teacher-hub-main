@@ -12,7 +12,7 @@ export type CreateReminderInput = {
 };
 
 export function listReminders(reminders: Reminder[]): Reminder[] {
-  return [...reminders].sort((a, b) => a.remindAt.localeCompare(b.remindAt));
+  return [...reminders].sort((a, b) => (a.remindAt || "").localeCompare(b.remindAt || ""));
 }
 
 export function remindersForTeacher(reminders: Reminder[], teacherId?: string): Reminder[] {

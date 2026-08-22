@@ -54,7 +54,7 @@ export function createFeedback(input: {
 export function listFeedbacksForReport(feedbacks: Feedback[], reportId: string): Feedback[] {
   return feedbacks
     .filter((f) => f.reportId === reportId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
 }
 
 export function deleteFeedback(id: string, actor: Teacher): boolean {

@@ -54,7 +54,7 @@ export function createComment(input: {
 export function listCommentsForReport(comments: ReportComment[], reportId: string): ReportComment[] {
   return comments
     .filter((c) => c.reportId === reportId)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    .sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt || ""));
 }
 
 export function deleteComment(id: string, actor: Teacher): boolean {
