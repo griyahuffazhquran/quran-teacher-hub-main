@@ -99,7 +99,7 @@ function Brand({ collapsed }: { collapsed?: boolean }) {
           <p className="truncate text-sm font-bold leading-tight tracking-tight group-hover:text-primary transition-colors">
             Griya Huffazh Quran
           </p>
-          <p className="truncate text-[11px] font-medium text-muted-foreground">Upgrading System</p>
+          <p className="truncate text-[11px] font-medium text-muted-foreground">New Upgrading System</p>
         </div>
       )}
     </Link>
