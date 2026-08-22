@@ -444,11 +444,41 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Mobile Bottom Navigation Bar */}
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur-md lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <ul className="grid grid-cols-5 mx-auto max-w-lg">
+        <ul className="grid grid-cols-5 mx-auto max-w-lg items-end">
           {mobileNavItems.map((item) => {
-            const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+            const isHome = item.to === "/";
+            const active = isHome ? pathname === "/" : pathname.startsWith(item.to);
             const showBadge = item.badgeKey === "announcements" && hasAnnBadge;
             const displayLabel = item.mobileLabel || item.label;
+
+            if (isHome) {
+              return (
+                <li key={item.to} className="relative flex justify-center">
+                  <Link
+                    to={item.to}
+                    className="group relative -top-4 flex flex-col items-center justify-center transition-all duration-300 active:scale-95"
+                  >
+                    <div
+                      className={cn(
+                        "grid size-13 place-items-center rounded-full bg-gradient-to-tr from-primary via-emerald-600 to-teal-500 text-white shadow-xl shadow-primary/35 ring-4 ring-background transition-all duration-300 group-hover:scale-110 group-hover:shadow-primary/50",
+                        active && "ring-primary/40 shadow-emerald-500/50 scale-105 animate-pulse",
+                      )}
+                    >
+                      <item.icon className="size-6 transition-transform duration-300 group-hover:scale-110" />
+                    </div>
+                    <span
+                      className={cn(
+                        "mt-1 text-[10px] font-bold tracking-tight transition-colors",
+                        active ? "text-primary font-extrabold" : "text-muted-foreground",
+                      )}
+                    >
+                      {displayLabel}
+                    </span>
+                  </Link>
+                </li>
+              );
+            }
+
             return (
               <li key={item.to}>
                 <Link

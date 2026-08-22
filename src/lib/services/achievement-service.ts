@@ -83,10 +83,21 @@ export function calculateTeacherXpAndRank(
   reports: Report[] = [],
   targets: Target[] = [],
   achievements: Achievement[] = [],
+  customRanks?: TeacherRank[],
+  xpConfig?: {
+    xpPerSetoran?: number;
+    bonusGradeA?: number;
+    xpPerMustami?: number;
+    xpPerTarget?: number;
+  },
 ) {
   const safeReports = Array.isArray(reports) ? reports : [];
   const safeTargets = Array.isArray(targets) ? targets : [];
   const safeAchievements = Array.isArray(achievements) ? achievements : [];
+
+  const activeRanks = customRanks && customRanks.length > 0
+    ? [...customRanks].sort((a, b) => a.minXp - b.minXp)
+    : teacherRanks;
 
   const teacherReports = safeReports.filter((r) => r && r.teacherId === teacherId && !r.isDeleted);
   const teacherTargets = safeTargets.filter((t) => t && t.teacherId === teacherId && !t.isDeleted);
@@ -94,23 +105,28 @@ export function calculateTeacherXpAndRank(
   const unlockedAchievements = safeAchievements.filter((a) => a && a.teacherId === teacherId && !a.isDeleted);
 
   // XP Breakdown calculation
-  const setoranXp = teacherReports.length * 30; // 30 XP per setoran
-  const gradeBonusXp = teacherReports.filter((r) => r && r.grade === "A").length * 20; // +20 XP for Grade A
-  const mustamiXp = teacherMustami.length * 25; // 25 XP per assessment as mustami
-  const targetCompletedXp = teacherTargets.filter((t) => t && t.status === "tercapai").length * 100; // 100 XP per target
+  const setoranRate = xpConfig?.xpPerSetoran ?? 30;
+  const gradeARate = xpConfig?.bonusGradeA ?? 20;
+  const mustamiRate = xpConfig?.xpPerMustami ?? 25;
+  const targetRate = xpConfig?.xpPerTarget ?? 100;
+
+  const setoranXp = teacherReports.length * setoranRate;
+  const gradeBonusXp = teacherReports.filter((r) => r && r.grade === "A").length * gradeARate;
+  const mustamiXp = teacherMustami.length * mustamiRate;
+  const targetCompletedXp = teacherTargets.filter((t) => t && t.status === "tercapai").length * targetRate;
   const achievementXp = unlockedAchievements.reduce((sum, a) => sum + (Number(a?.points) || 0), 0);
 
   const totalXp = setoranXp + gradeBonusXp + mustamiXp + targetCompletedXp + achievementXp;
 
   // Determine Current Rank Level
-  let currentRank: TeacherRank = teacherRanks[0]!;
-  let nextRank: TeacherRank = teacherRanks[1]!;
+  let currentRank: TeacherRank = activeRanks[0] || teacherRanks[0]!;
+  let nextRank: TeacherRank = activeRanks[1] || activeRanks[0] || teacherRanks[0]!;
 
-  for (let i = teacherRanks.length - 1; i >= 0; i--) {
-    const rank = teacherRanks[i]!;
+  for (let i = activeRanks.length - 1; i >= 0; i--) {
+    const rank = activeRanks[i]!;
     if (totalXp >= rank.minXp) {
       currentRank = rank;
-      nextRank = teacherRanks[i + 1] ?? rank;
+      nextRank = activeRanks[i + 1] ?? rank;
       break;
     }
   }
@@ -127,6 +143,11 @@ export function calculateTeacherXpAndRank(
 
   return {
     totalXp,
+    setoranXp,
+    gradeBonusXp,
+    mustamiXp,
+    targetCompletedXp,
+    achievementXp,
     currentRank,
     nextRank,
     progressPct,

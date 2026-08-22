@@ -16,6 +16,9 @@ import {
   Gift,
   Crown,
   Zap,
+  Medal,
+  TrendingUp,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
@@ -49,11 +52,11 @@ import { achievementRepo, reportRepo, targetRepo, teacherRepo } from "@/lib/data
 import {
   calculateTeacherXpAndRank,
   masterAchievements as initialMasterAchievements,
-  teacherRanks,
+  teacherRanks as initialTeacherRanks,
   type AchievementDefinition,
 } from "@/lib/services/achievement-service";
 import { activeReports, activeTargets, activeTeachers } from "@/lib/data/selectors";
-import type { AchievementCategory, Teacher } from "@/lib/data/types";
+import type { AchievementCategory, Teacher, TeacherRank } from "@/lib/data/types";
 import { logActivity, notify } from "@/lib/services/notification-service";
 
 export const Route = createFileRoute("/achievements")({
@@ -84,6 +87,41 @@ export function AchievementsPage() {
   const [editingBadge, setEditingBadge] = useState<AchievementDefinition | null>(null);
   const [deleteBadgeTarget, setDeleteBadgeTarget] = useState<AchievementDefinition | null>(null);
 
+  // Dynamic Ranks / Gelar Upgrading State (Persisted in localStorage)
+  const [customRanks, setCustomRanks] = useState<TeacherRank[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("griya_teacher_ranks");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {
+          // fallback to initial
+        }
+      }
+    }
+    return initialTeacherRanks;
+  });
+
+  const saveRanks = (newRanks: TeacherRank[]) => {
+    const sorted = [...newRanks]
+      .sort((a, b) => a.minXp - b.minXp)
+      .map((r, i) => ({ ...r, level: i + 1 }));
+    setCustomRanks(sorted);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("griya_teacher_ranks", JSON.stringify(sorted));
+    }
+  };
+
+  // Gelar Upgrading CRUD State
+  const [rankDialogOpen, setRankDialogOpen] = useState(false);
+  const [editingRank, setEditingRank] = useState<TeacherRank | null>(null);
+  const [deleteRankTarget, setDeleteRankTarget] = useState<TeacherRank | null>(null);
+  const [rankTitle, setRankTitle] = useState("");
+  const [rankMinXp, setRankMinXp] = useState(0);
+  const [rankBadge, setRankBadge] = useState("🌱");
+  const [rankColor, setRankColor] = useState("text-slate-500");
+
   // Form states for Badge CRUD
   const [code, setCode] = useState("");
   const [title, setTitle] = useState("");
@@ -102,16 +140,42 @@ export function AchievementsPage() {
   const [xpPerMustami, setXpPerMustami] = useState(25);
   const [xpPerTarget, setXpPerTarget] = useState(100);
 
+  // Detail Teacher Pop-up Modal State
+  const [selectedTeacherDetail, setSelectedTeacherDetail] = useState<{
+    teacher: Teacher;
+    totalXp: number;
+    setoranXp: number;
+    gradeBonusXp: number;
+    mustamiXp: number;
+    targetCompletedXp: number;
+    achievementXp: number;
+    currentRank: TeacherRank;
+    nextRank: TeacherRank;
+    progressPct: number;
+    setoranCount: number;
+    mustamiCount: number;
+    completedTargetsCount: number;
+    unlockedBadgesCount: number;
+    rankIndex: number;
+  } | null>(null);
+
   // Leaderboard Calculation (EXCLUSIVE OF UPGRADERS)
   const leaderboard = useMemo(() => {
     return teachers
       .filter((t) => t.role !== "upgrader") // Exclude Upgrader from public Leaderboard ranking!
       .map((t) => {
-        const stats = calculateTeacherXpAndRank(t.id, reports, targets, achievementRows);
+        const stats = calculateTeacherXpAndRank(
+          t.id,
+          reports,
+          targets,
+          achievementRows,
+          customRanks,
+          { xpPerSetoran, bonusGradeA, xpPerMustami, xpPerTarget },
+        );
         return { teacher: t, ...stats };
       })
       .sort((a, b) => b.totalXp - a.totalXp);
-  }, [teachers, reports, targets, achievementRows]);
+  }, [teachers, reports, targets, achievementRows, customRanks, xpPerSetoran, bonusGradeA, xpPerMustami, xpPerTarget]);
 
   // Open Create Badge
   const handleOpenCreateBadge = () => {
@@ -171,6 +235,73 @@ export function AchievementsPage() {
     toast.success("Lencana master berhasil dihapus.");
   };
 
+  // Rank / Gelar Upgrading Handlers
+  const handleOpenCreateRank = () => {
+    setEditingRank(null);
+    setRankTitle("");
+    setRankMinXp(500);
+    setRankBadge("🌟");
+    setRankColor("text-indigo-500");
+    setRankDialogOpen(true);
+  };
+
+  const handleOpenEditRank = (rank: TeacherRank) => {
+    setEditingRank(rank);
+    setRankTitle(rank.title);
+    setRankMinXp(rank.minXp);
+    setRankBadge(rank.badge);
+    setRankColor(rank.color);
+    setRankDialogOpen(true);
+  };
+
+  const handleSaveRank = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rankTitle.trim()) {
+      toast.error("Nama Gelar wajib diisi.");
+      return;
+    }
+
+    if (editingRank) {
+      const updated = customRanks.map((r) =>
+        r.level === editingRank.level
+          ? {
+              ...r,
+              title: rankTitle.trim(),
+              minXp: Number(rankMinXp) || 0,
+              badge: rankBadge.trim() || "🌟",
+              color: rankColor,
+            }
+          : r,
+      );
+      saveRanks(updated);
+      toast.success("Gelar Upgrading berhasil diperbarui.");
+    } else {
+      const newRank: TeacherRank = {
+        level: customRanks.length + 1,
+        title: rankTitle.trim(),
+        minXp: Number(rankMinXp) || 0,
+        badge: rankBadge.trim() || "🌟",
+        color: rankColor,
+      };
+      saveRanks([...customRanks, newRank]);
+      toast.success("Gelar Upgrading baru berhasil ditambahkan!");
+    }
+    setRankDialogOpen(false);
+  };
+
+  const handleDeleteRank = () => {
+    if (!deleteRankTarget) return;
+    if (customRanks.length <= 1) {
+      toast.error("Minimal harus ada 1 Gelar Upgrading.");
+      setDeleteRankTarget(null);
+      return;
+    }
+    const filtered = customRanks.filter((r) => r.level !== deleteRankTarget.level);
+    saveRanks(filtered);
+    setDeleteRankTarget(null);
+    toast.success("Gelar Upgrading berhasil dihapus.");
+  };
+
   // Manual Award submit
   const handleAwardSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -221,10 +352,14 @@ export function AchievementsPage() {
           description="Memacu semangat istiqomah hafalan & kualitas upgrading guru Griya Huffazh Quran."
           action={
             isUpgrader ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button size="sm" onClick={() => setAwardDialogOpen(true)} variant="outline" className="h-9 text-xs gap-1.5 font-medium">
                   <Gift className="size-4 text-emerald-500" />
                   <span>Beri Lencana Manual</span>
+                </Button>
+                <Button size="sm" onClick={handleOpenCreateRank} variant="secondary" className="h-9 text-xs gap-1.5 font-medium">
+                  <Medal className="size-4 text-amber-500" />
+                  <span>Tambah Gelar Upgrading</span>
                 </Button>
                 <Button size="sm" onClick={handleOpenCreateBadge} className="h-9 text-xs gap-1.5 font-medium shadow-md">
                   <Plus className="size-4" />
@@ -242,7 +377,7 @@ export function AchievementsPage() {
               <Trophy className="size-5 text-amber-500 animate-bounce" /> Top 3 Upgrading Mumtaz
             </h2>
             <Badge variant="secondary" className="text-xs">
-              Murni Kompetisi Guru Pengajar
+              Klik Card Untuk Detail Pencapaian
             </Badge>
           </div>
 
@@ -252,7 +387,7 @@ export function AchievementsPage() {
                 {
                   label: "Juara 1 Emas",
                   icon: "🥇",
-                  border: "border-amber-400 dark:border-amber-500 shadow-amber-500/20",
+                  border: "border-amber-400 dark:border-amber-500 shadow-amber-500/20 hover:border-amber-500",
                   bg: "bg-gradient-to-b from-amber-500/10 via-amber-500/5 to-transparent",
                   badgeBg: "bg-amber-500 text-white font-bold",
                   badgeIcon: <Crown className="size-4 text-amber-400" />,
@@ -260,7 +395,7 @@ export function AchievementsPage() {
                 {
                   label: "Juara 2 Perak",
                   icon: "🥈",
-                  border: "border-slate-300 dark:border-slate-400 shadow-slate-400/20",
+                  border: "border-slate-300 dark:border-slate-400 shadow-slate-400/20 hover:border-slate-500",
                   bg: "bg-gradient-to-b from-slate-400/10 via-slate-400/5 to-transparent",
                   badgeBg: "bg-slate-500 text-white font-bold",
                   badgeIcon: null,
@@ -268,7 +403,7 @@ export function AchievementsPage() {
                 {
                   label: "Juara 3 Perunggu",
                   icon: "🥉",
-                  border: "border-amber-700/50 dark:border-amber-600/50 shadow-amber-700/20",
+                  border: "border-amber-700/50 dark:border-amber-600/50 shadow-amber-700/20 hover:border-amber-700",
                   bg: "bg-gradient-to-b from-amber-700/10 via-amber-700/5 to-transparent",
                   badgeBg: "bg-amber-800 text-white font-bold",
                   badgeIcon: null,
@@ -278,7 +413,8 @@ export function AchievementsPage() {
               return (
                 <Card
                   key={item.teacher.id}
-                  className={`relative overflow-hidden border-2 shadow-xl transition-all duration-300 hover:scale-[1.02] ${ranksConf?.border} ${ranksConf?.bg}`}
+                  onClick={() => setSelectedTeacherDetail({ ...item, rankIndex: idx })}
+                  className={`group relative overflow-hidden border-2 shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer ${ranksConf?.border} ${ranksConf?.bg}`}
                 >
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
@@ -288,12 +424,15 @@ export function AchievementsPage() {
                           {ranksConf?.icon} {ranksConf?.label}
                         </Badge>
                       </div>
-                      <span className="text-3xl">{item.currentRank.badge}</span>
+                      <span className="text-3xl transition-transform group-hover:scale-125 duration-300">
+                        {item.currentRank.badge}
+                      </span>
                     </div>
-                    <CardTitle className="text-lg font-extrabold pt-2 text-foreground truncate">
-                      {item.teacher.name}
+                    <CardTitle className="text-lg font-extrabold pt-2 text-foreground truncate flex items-center justify-between">
+                      <span>{item.teacher.name}</span>
+                      <Eye className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </CardTitle>
-                    <CardDescription className="text-xs font-semibold text-primary">
+                    <CardDescription className={`text-xs font-semibold ${item.currentRank.color}`}>
                       {item.currentRank.title}
                     </CardDescription>
                   </CardHeader>
@@ -328,20 +467,25 @@ export function AchievementsPage() {
           </div>
         </div>
 
-        {/* TABS UTAMA (HANYA TAB LEADERBOARD DIPERTINGKATKAN, TAB LAIN KHUSUS UPGRADER) */}
+        {/* TABS UTAMA */}
         <Tabs defaultValue="leaderboard" className="space-y-4">
-          <TabsList className={`flex flex-col sm:grid w-full h-auto p-1.5 gap-2 rounded-xl bg-muted/80 ${isUpgrader ? "sm:grid-cols-3" : "sm:grid-cols-1"}`}>
+          <TabsList className={`flex flex-col sm:grid w-full h-auto p-1.5 gap-2 rounded-xl bg-muted/80 ${isUpgrader ? "sm:grid-cols-4" : "sm:grid-cols-1"}`}>
             <TabsTrigger value="leaderboard" className="w-full min-h-10 px-3 text-xs sm:text-sm font-semibold gap-2 justify-center whitespace-normal text-center leading-tight py-2">
-              <Trophy className="size-4 shrink-0" /> <span>Papan Peringkat Seluruh Guru</span>
+              <Trophy className="size-4 shrink-0" /> <span>Klasemen Peringkat</span>
             </TabsTrigger>
             {isUpgrader && (
+              <TabsTrigger value="ranks" className="w-full min-h-10 px-3 text-xs sm:text-sm font-semibold gap-2 justify-center whitespace-normal text-center leading-tight py-2">
+                <Medal className="size-4 shrink-0 text-amber-500" /> <span>Manajemen Gelar Upgrading</span>
+              </TabsTrigger>
+            )}
+            {isUpgrader && (
               <TabsTrigger value="badges" className="w-full min-h-10 px-3 text-xs sm:text-sm font-semibold gap-2 justify-center whitespace-normal text-center leading-tight py-2">
-                <Award className="size-4 shrink-0" /> <span>Manajemen Lencana Master (CRUD)</span>
+                <Award className="size-4 shrink-0" /> <span>Lencana Master</span>
               </TabsTrigger>
             )}
             {isUpgrader && (
               <TabsTrigger value="settings" className="w-full min-h-10 px-3 text-xs sm:text-sm font-semibold gap-2 justify-center whitespace-normal text-center leading-tight py-2">
-                <Settings2 className="size-4 shrink-0" /> <span>Pengaturan Poin XP</span>
+                <Settings2 className="size-4 shrink-0" /> <span>Pengaturan XP</span>
               </TabsTrigger>
             )}
           </TabsList>
@@ -354,7 +498,7 @@ export function AchievementsPage() {
                   <Users className="size-4 text-primary" /> Klasemen Peringkat Guru Pengajar
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Daftar peringkat keaktifan setoran hafalan dan upgrading seluruh Ustadz & Ustadzah.
+                  Klik nama atau baris mana saja untuk melihat detail breakdown pencapaian & perolehan XP.
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
@@ -375,7 +519,8 @@ export function AchievementsPage() {
                     {leaderboard.map((item, idx) => (
                       <tr
                         key={item.teacher.id}
-                        className={`hover:bg-muted/30 transition-colors ${
+                        onClick={() => setSelectedTeacherDetail({ ...item, rankIndex: idx })}
+                        className={`hover:bg-primary/10 transition-colors cursor-pointer ${
                           item.teacher.id === user?.id ? "bg-primary/5 font-medium" : ""
                         }`}
                       >
@@ -411,7 +556,80 @@ export function AchievementsPage() {
             </Card>
           </TabsContent>
 
-          {/* TAB 2: MASTER BADGES CRUD (UPGRADER ONLY) */}
+          {/* TAB 2: MANAJEMEN GELAR UPGRADING (UPGRADER ONLY) */}
+          {isUpgrader && (
+            <TabsContent value="ranks" className="space-y-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <div>
+                    <CardTitle className="text-base font-bold flex items-center gap-2">
+                      <Medal className="size-5 text-amber-500" /> Manajemen Gelar Upgrading Pengajar
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Atur tingkatan gelar (Level, Nama Gelar, Syarat Min XP, Badge & Warna) yang akan diraih oleh para peserta.
+                    </CardDescription>
+                  </div>
+                  <Button size="sm" onClick={handleOpenCreateRank} className="h-9 text-xs gap-1.5 font-medium shadow-md">
+                    <Plus className="size-4" />
+                    <span>Tambah Gelar Baru</span>
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {customRanks.map((rank) => (
+                      <Card key={rank.level} className="relative overflow-hidden border border-border">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-3xl">{rank.badge}</span>
+                              <div>
+                                <CardTitle className={`text-base font-bold ${rank.color}`}>
+                                  Level {rank.level}: {rank.title}
+                                </CardTitle>
+                                <p className="text-xs text-muted-foreground font-medium">
+                                  Minimal XP: <strong className="text-foreground">{rank.minXp} XP</strong>
+                                </p>
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="text-[10px]">
+                              Level {rank.level}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-xs pt-1">
+                          <div className="flex items-center justify-between border-t border-border/50 pt-2">
+                            <span className="text-[11px] text-muted-foreground">
+                              Class Warna: <code className="text-primary font-mono">{rank.color}</code>
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleOpenEditRank(rank)}
+                                className="h-7 px-2 text-[11px] gap-1"
+                              >
+                                <Pencil className="size-3" /> Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setDeleteRankTarget(rank)}
+                                className="h-7 px-2 text-[11px] text-destructive hover:text-destructive gap-1"
+                              >
+                                <Trash2 className="size-3" /> Hapus
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* TAB 3: MASTER BADGES CRUD (UPGRADER ONLY) */}
           {isUpgrader && (
             <TabsContent value="badges" className="space-y-4">
               <div className="grid gap-3 md:grid-cols-2">
@@ -462,7 +680,7 @@ export function AchievementsPage() {
             </TabsContent>
           )}
 
-          {/* TAB 3: XP RULES SETTINGS (UPGRADER ONLY) */}
+          {/* TAB 4: XP RULES SETTINGS (UPGRADER ONLY) */}
           {isUpgrader && (
             <TabsContent value="settings" className="space-y-4">
               <Card>
@@ -532,6 +750,217 @@ export function AchievementsPage() {
           )}
         </Tabs>
       </div>
+
+      {/* DIALOG POP-UP DETAIL PENCAPAIAN GURU */}
+      <Dialog open={!!selectedTeacherDetail} onOpenChange={(open) => !open && setSelectedTeacherDetail(null)}>
+        {selectedTeacherDetail && (
+          <DialogContent className="max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-2 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="text-4xl p-2.5 rounded-2xl bg-muted border border-border">
+                  {selectedTeacherDetail.currentRank.badge}
+                </div>
+                <div>
+                  <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                    <span>{selectedTeacherDetail.teacher.name}</span>
+                    <Badge variant="secondary" className="text-[10px]">
+                      {selectedTeacherDetail.rankIndex === 0
+                        ? "🥇 Juara 1"
+                        : selectedTeacherDetail.rankIndex === 1
+                          ? "🥈 Juara 2"
+                          : selectedTeacherDetail.rankIndex === 2
+                            ? "🥉 Juara 3"
+                            : `#${selectedTeacherDetail.rankIndex + 1}`}
+                    </Badge>
+                  </DialogTitle>
+                  <p className={`text-xs font-bold ${selectedTeacherDetail.currentRank.color}`}>
+                    {selectedTeacherDetail.currentRank.title} (Level {selectedTeacherDetail.currentRank.level})
+                  </p>
+                </div>
+              </div>
+            </DialogHeader>
+
+            {/* Progress to Next Rank */}
+            <div className="space-y-1.5 bg-muted/40 p-3 rounded-xl border border-border/60">
+              <div className="flex justify-between items-center text-xs font-semibold">
+                <span className="text-muted-foreground flex items-center gap-1">
+                  <TrendingUp className="size-3.5 text-primary" /> Kemajuan Level berikutnya:
+                </span>
+                <span className="text-primary">{selectedTeacherDetail.progressPct}%</span>
+              </div>
+              <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-500 rounded-full"
+                  style={{ width: `${selectedTeacherDetail.progressPct}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground flex justify-between">
+                <span>Rank: {selectedTeacherDetail.currentRank.title}</span>
+                <span>Next: {selectedTeacherDetail.nextRank.title} ({selectedTeacherDetail.nextRank.minXp} XP)</span>
+              </p>
+            </div>
+
+            {/* Detailed XP Breakdown Card */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Zap className="size-4 text-amber-500" /> Rincian Sumber Poin XP
+              </h4>
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-xl bg-card border border-border space-y-1">
+                  <span className="text-[11px] text-muted-foreground block">Setoran Hafalan</span>
+                  <p className="font-bold text-foreground">
+                    {selectedTeacherDetail.setoranCount} setoran × {xpPerSetoran} XP
+                  </p>
+                  <p className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+                    + {selectedTeacherDetail.setoranXp} XP
+                  </p>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-card border border-border space-y-1">
+                  <span className="text-[11px] text-muted-foreground block">Bonus Nilai Mumtaz (A)</span>
+                  <p className="font-bold text-foreground">Apresiasi Kualitas</p>
+                  <p className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+                    + {selectedTeacherDetail.gradeBonusXp} XP
+                  </p>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-card border border-border space-y-1">
+                  <span className="text-[11px] text-muted-foreground block">Tugas Menyimak (Mustami')</span>
+                  <p className="font-bold text-foreground">
+                    {selectedTeacherDetail.mustamiCount} kali × {xpPerMustami} XP
+                  </p>
+                  <p className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+                    + {selectedTeacherDetail.mustamiXp} XP
+                  </p>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-card border border-border space-y-1">
+                  <span className="text-[11px] text-muted-foreground block">Target Upgrading Tuntas</span>
+                  <p className="font-bold text-foreground">
+                    {selectedTeacherDetail.completedTargetsCount} target × {xpPerTarget} XP
+                  </p>
+                  <p className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+                    + {selectedTeacherDetail.targetCompletedXp} XP
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                <span className="text-xs font-bold uppercase">Total akumulasi xp saat ini:</span>
+                <span className="text-lg font-extrabold">{selectedTeacherDetail.totalXp} XP</span>
+              </div>
+            </div>
+
+            {/* Quick Actions Footer */}
+            <DialogFooter className="pt-2 gap-2 flex-col sm:flex-row">
+              {isUpgrader && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setAwardTeacherId(selectedTeacherDetail.teacher.id);
+                    setSelectedTeacherDetail(null);
+                    setAwardDialogOpen(true);
+                  }}
+                  className="h-9 text-xs gap-1.5 w-full sm:w-auto"
+                >
+                  <Gift className="size-3.5 text-emerald-500" /> Beri Lencana Manual
+                </Button>
+              )}
+              <Button
+                size="sm"
+                onClick={() => setSelectedTeacherDetail(null)}
+                className="h-9 text-xs w-full sm:w-auto"
+              >
+                Tutup Detail
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
+
+      {/* DIALOG CREATE / EDIT GELAR UPGRADING (UPGRADER ONLY) */}
+      {isUpgrader && (
+        <Dialog open={rankDialogOpen} onOpenChange={setRankDialogOpen}>
+          <DialogContent className="max-w-md p-6 space-y-4">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                <Medal className="size-5 text-amber-500" />
+                {editingRank ? "Edit Gelar Upgrading" : "Tambah Gelar Upgrading Baru"}
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                Tentukan nama gelar, batas minimal perolehan XP, dan badge simbol untuk para peserta.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleSaveRank} className="space-y-3.5">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Nama Gelar Upgrading</Label>
+                <Input
+                  placeholder="Contoh: Al-Mujtahid, Hafizh Mutqin"
+                  value={rankTitle}
+                  onChange={(e) => setRankTitle(e.target.value)}
+                  className="h-9 text-xs"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">Minimal Poin XP</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={rankMinXp}
+                    onChange={(e) => setRankMinXp(Number(e.target.value))}
+                    className="h-9 text-xs"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">Icon Emoji / Badge</Label>
+                  <Input
+                    placeholder="Contoh: 🌱, ⚡, ⭐, 👑, 🏆"
+                    value={rankBadge}
+                    onChange={(e) => setRankBadge(e.target.value)}
+                    className="h-9 text-xs text-center text-base"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Warna Teks Title (Tailwind CSS Class)</Label>
+                <Select value={rankColor} onValueChange={setRankColor}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="text-slate-500">Abu-abu (Slate)</SelectItem>
+                    <SelectItem value="text-blue-500">Biru (Blue)</SelectItem>
+                    <SelectItem value="text-amber-500">Kuning/Emas (Amber)</SelectItem>
+                    <SelectItem value="text-indigo-500">Ungu (Indigo)</SelectItem>
+                    <SelectItem value="text-emerald-500">Hijau (Emerald)</SelectItem>
+                    <SelectItem value="text-rose-500">Merah (Rose)</SelectItem>
+                    <SelectItem value="text-purple-500">Ungu Tua (Purple)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <DialogFooter className="pt-3">
+                <Button type="button" variant="outline" onClick={() => setRankDialogOpen(false)} className="h-9 text-xs">
+                  Batal
+                </Button>
+                <Button type="submit" className="h-9 text-xs font-semibold">
+                  Simpan Gelar
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* DIALOG CREATE / EDIT MASTER BADGE (UPGRADER ONLY) */}
       {isUpgrader && (
@@ -681,6 +1110,17 @@ export function AchievementsPage() {
             </form>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* CONFIRM DELETE RANK DIALOG */}
+      {isUpgrader && (
+        <ConfirmDeleteDialog
+          open={!!deleteRankTarget}
+          onOpenChange={(open) => !open && setDeleteRankTarget(null)}
+          title="Konfirmasi Hapus Gelar Upgrading"
+          itemName={deleteRankTarget?.title}
+          onConfirm={handleDeleteRank}
+        />
       )}
 
       {/* CONFIRM DELETE BADGE DIALOG */}

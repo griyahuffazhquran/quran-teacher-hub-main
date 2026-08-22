@@ -63,21 +63,10 @@ export function getSecondaryNav(role?: UserRole): NavItem[] {
 }
 
 export function getMobileNav(role?: UserRole): NavItem[] {
-  if (role === "upgrader") {
-    return [
-      { label: "Dashboard", mobileLabel: "Home", to: "/", icon: LayoutDashboard },
-      { label: "Setoran", to: "/reports", icon: ClipboardList },
-      { label: "Target", to: "/targets", icon: Target },
-      { label: "Leaderboard & Lencana", mobileLabel: "Prestasi", to: "/achievements", icon: Award },
-      { label: "Profil", to: "/profile", icon: UserRound },
-    ];
-  }
-
-  // Mobile Navbar for regular teachers
   return [
-    { label: "Dashboard", mobileLabel: "Home", to: "/", icon: LayoutDashboard },
     { label: "Setoran", to: "/reports", icon: ClipboardList },
     { label: "Target", to: "/targets", icon: Target },
+    { label: "Dashboard", mobileLabel: "Home", to: "/", icon: LayoutDashboard },
     { label: "Leaderboard & Lencana", mobileLabel: "Prestasi", to: "/achievements", icon: Award },
     { label: "Profil", to: "/profile", icon: UserRound },
   ];
