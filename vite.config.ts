@@ -23,11 +23,12 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
-  // Deploy to Netlify instead of the default Cloudflare target.
-  // Outside the Lovable sandbox the config spreads this into nitroOpts,
-  // so the preset is respected by the build.
+  // Deploy target configured for Cloudflare Pages.
   nitro: {
-    preset: "netlify",
+    preset: process.env.NITRO_PRESET || "cloudflare-pages",
+    cloudflare: {
+      nodeCompat: true,
+    },
     externals: {
       external: ["@aws-sdk/client-s3"],
     },
