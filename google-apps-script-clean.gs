@@ -16,7 +16,8 @@
  */
 
 function doGet(e) {
-  var action = e.parameter.action;
+  e = e || { parameter: {} };
+  var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "getTeachers";
   try {
     switch (action) {
       case "getTeachers":
@@ -45,7 +46,7 @@ function doGet(e) {
         var cache = CacheService.getScriptCache();
         var rawCache = cache.get("ACTIVE_PRESENCE") || "{}";
         var mapData = {};
-        try { mapData = JSON.parse(rawCache); } catch(e) {}
+        try { mapData = JSON.parse(rawCache); } catch(err) {}
         var nowTime = new Date().getTime();
         for (var pk in mapData) {
           if (nowTime - mapData[pk].lastSeenAt > 45000) { delete mapData[pk]; }
@@ -60,8 +61,10 @@ function doGet(e) {
 }
 
 function doPost(e) {
+  e = e || { postData: { contents: "{}" } };
   try {
-    var contents = JSON.parse(e.postData.contents);
+    var rawContents = (e && e.postData && e.postData.contents) ? e.postData.contents : "{}";
+    var contents = JSON.parse(rawContents);
     var action = contents.action;
     var data = contents.data || contents;
     var id = contents.id || (data ? data.ID : null);
@@ -101,6 +104,52 @@ function doPost(e) {
       return jsonResponse(requestPasswordReset(data));
     }
 
+    if (action === "login") {
+      var username = (data.username || contents.username || "").toString().trim().toLowerCase();
+      var password = (data.password || contents.password || "").toString().trim();
+
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var sheet = findSheetSafely(ss, "teachers");
+      if (!sheet) return jsonResponse({ ok: false, error: "Username atau password salah." });
+
+      var values = sheet.getDataRange().getValues();
+      if (values.length < 2) return jsonResponse({ ok: false, error: "Username atau password salah." });
+
+      var headers = values[0];
+      var unameCol = headers.indexOf("Username");
+      if (unameCol === -1) unameCol = headers.indexOf("username");
+
+      var passCol = headers.indexOf("Password");
+      if (passCol === -1) passCol = headers.indexOf("password");
+
+      var statusCol = headers.indexOf("Status");
+
+      if (unameCol === -1) return jsonResponse({ ok: false, error: "Username atau password salah." });
+
+      for (var r = 1; r < values.length; r++) {
+        var rowUname = String(values[r][unameCol]).trim().toLowerCase();
+        if (rowUname === username) {
+          var rowPass = passCol !== -1 ? String(values[r][passCol]).trim() : "griya123";
+          if (!rowPass) rowPass = "griya123";
+
+          if (password !== rowPass) {
+            return jsonResponse({ ok: false, error: "Username atau password salah." });
+          }
+
+          if (statusCol !== -1 && String(values[r][statusCol]).trim().toLowerCase() === "nonaktif") {
+            return jsonResponse({ ok: false, error: "Akun Anda saat ini dinonaktifkan." });
+          }
+
+          var userObj = {};
+          for (var j = 0; j < headers.length; j++) {
+            if (headers[j]) userObj[headers[j]] = values[r][j];
+          }
+          return jsonResponse({ ok: true, user: userObj });
+        }
+      }
+      return jsonResponse({ ok: false, error: "Username atau password salah." });
+    }
+
     // Single item mutations
     if (action.startsWith("add") || action.startsWith("create")) {
       var sheetName = getSheetNameFromAction(action);
@@ -130,9 +179,21 @@ function getSheetNameFromAction(action) {
   return name;
 }
 
+function findSheetSafely(ss, sheetName) {
+  var sheet = ss.getSheetByName(sheetName);
+  if (sheet) return sheet;
+  if (sheetName === "achievements") {
+    return ss.getSheetByName("chievements") || ss.getSheetByName("Achievement") || ss.getSheetByName("Achievements");
+  }
+  if (sheetName === "masterBadges") {
+    return ss.getSheetByName("masterBadges") || ss.getSheetByName("master_badges") || ss.getSheetByName("MasterBadges");
+  }
+  return null;
+}
+
 function getTableData(sheetName) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
+  var sheet = findSheetSafely(ss, sheetName);
   if (!sheet) return { ok: true, data: [] };
 
   var values = sheet.getDataRange().getValues();
@@ -162,7 +223,7 @@ function getTableData(sheetName) {
 
 function addRowPreventDuplicates(sheetName, data) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
+  var sheet = findSheetSafely(ss, sheetName);
 
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
@@ -205,6 +266,29 @@ function addRowPreventDuplicates(sheetName, data) {
     }
   }
 
+  // Prevent Duplicates for achievements by ID Guru + Kode Lencana
+  if ((sheetName === "achievements" || sheetName === "chievements") && values.length > 1) {
+    var guruColIdx = headers.indexOf("ID Guru");
+    if (guruColIdx === -1) guruColIdx = headers.indexOf("teacherId");
+    var kodeColIdx = headers.indexOf("Kode Lencana");
+    if (kodeColIdx === -1) kodeColIdx = headers.indexOf("code");
+
+    if (guruColIdx !== -1 && kodeColIdx !== -1) {
+      var newGuru = String(data["ID Guru"] || data.teacherId || "").trim();
+      var newKode = String(data["Kode Lencana"] || data.code || "").trim();
+      if (newGuru && newKode) {
+        for (var r = 1; r < values.length; r++) {
+          var rowGuru = String(values[r][guruColIdx]).trim();
+          var rowKode = String(values[r][kodeColIdx]).trim();
+          if (rowGuru === newGuru && rowKode === newKode) {
+            var existingRowId = values[r][headers.indexOf("ID")];
+            if (existingRowId) return updateRowById(sheetName, existingRowId, data);
+          }
+        }
+      }
+    }
+  }
+
   var rowData = headers.map(function (h) {
     if (h === "Status Dihapus") {
       return data[h] !== undefined ? data[h] : "TIDAK";
@@ -218,7 +302,7 @@ function addRowPreventDuplicates(sheetName, data) {
 
 function updateRowById(sheetName, id, data) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
+  var sheet = findSheetSafely(ss, sheetName);
   if (!sheet) return { ok: false, error: "Sheet " + sheetName + " tidak ditemukan." };
 
   var values = sheet.getDataRange().getValues();
@@ -252,7 +336,7 @@ function updateRowById(sheetName, id, data) {
 /** Soft-delete row by setting 'Status Dihapus' = 'YA' without deleting row physically */
 function deleteRowById(sheetName, id) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
+  var sheet = findSheetSafely(ss, sheetName);
   if (!sheet) return { ok: false, error: "Sheet " + sheetName + " tidak ditemukan." };
 
   var values = sheet.getDataRange().getValues();

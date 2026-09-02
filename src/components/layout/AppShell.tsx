@@ -83,25 +83,21 @@ function NavLink({
 }
 
 function Brand({ collapsed }: { collapsed?: boolean }) {
+  if (collapsed) return null;
   return (
     <Link
       to="/"
-      className={cn(
-        "group flex items-center gap-3 px-1 cursor-pointer transition-transform hover:opacity-90",
-        collapsed && "justify-center px-0",
-      )}
+      className="group flex items-center gap-3 px-1 cursor-pointer transition-transform hover:opacity-90"
     >
       <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 transition-transform duration-200 group-hover:scale-105">
         <BookOpenText className="size-5" />
       </div>
-      {!collapsed && (
-        <div className="min-w-0 transition-all duration-300">
-          <p className="truncate text-sm font-bold leading-tight tracking-tight group-hover:text-primary transition-colors">
-            Griya Huffazh Quran
-          </p>
-          <p className="truncate text-[11px] font-medium text-muted-foreground">Upgrading System</p>
-        </div>
-      )}
+      <div className="min-w-0 transition-all duration-300">
+        <p className="truncate text-sm font-bold leading-tight tracking-tight group-hover:text-primary transition-colors">
+          Griya Huffazh Quran
+        </p>
+        <p className="truncate text-[11px] font-medium text-muted-foreground">Upgrading System</p>
+      </div>
     </Link>
   );
 }
@@ -128,7 +124,7 @@ function SidebarNav({
     <TooltipProvider delayDuration={100}>
       <div className={cn("flex h-full flex-col gap-5 p-3.5", collapsed && "items-center px-2")}>
         {/* Header / Brand + Collapse Trigger */}
-        <div className={cn("flex items-center justify-between", collapsed && "flex-col gap-3")}>
+        <div className={cn("flex items-center justify-between w-full", collapsed && "justify-center")}>
           <Brand collapsed={collapsed} />
           {onToggleCollapse && (
             <Tooltip>
@@ -138,9 +134,9 @@ function SidebarNav({
                   size="icon"
                   onClick={onToggleCollapse}
                   aria-label={collapsed ? "Perluas menu sidebar" : "Ciutkan menu sidebar"}
-                  className="hidden size-8 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground lg:flex"
+                  className="hidden size-9 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground lg:flex"
                 >
-                  {collapsed ? <PanelLeft className="size-4" /> : <PanelLeftClose className="size-4" />}
+                  {collapsed ? <PanelLeft className="size-5 text-primary" /> : <PanelLeftClose className="size-4" />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right" sideOffset={12}>
@@ -404,16 +400,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Menu className="size-5" />
           </Button>
 
-          {/* Top Panel Toggle Button for Desktop */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleCollapsed}
-            aria-label={collapsed ? "Perluas menu sidebar" : "Ciutkan menu sidebar"}
-            className="hidden size-9 text-muted-foreground hover:bg-accent hover:text-foreground lg:flex"
-          >
-            <PanelLeft className="size-5" />
-          </Button>
 
           {/* Item 6: Clickable Title to Dashboard */}
           <Link
@@ -525,11 +511,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             </p>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setLogoutConfirmOpen(false)} className="h-9 text-xs">
+          <div className="flex items-center justify-center gap-3 pt-2 w-full">
+            <Button variant="outline" onClick={() => setLogoutConfirmOpen(false)} className="h-9 text-xs min-w-24">
               Batal
             </Button>
-            <Button variant="destructive" onClick={executeLogout} className="h-9 text-xs font-semibold gap-1.5">
+            <Button variant="destructive" onClick={executeLogout} className="h-9 text-xs font-semibold gap-1.5 min-w-28">
               <LogOut className="size-3.5" />
               <span>Ya, Keluar</span>
             </Button>

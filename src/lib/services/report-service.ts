@@ -1,7 +1,8 @@
-import { reportRepo } from "@/lib/data/repositories";
+import { reportRepo, teacherRepo } from "@/lib/data/repositories";
 import type { Grade, MaterialType, Report, ReportStatus, Teacher } from "@/lib/data/types";
 import { materialLabel } from "@/lib/data/selectors";
 import { logActivity, notify } from "./notification-service";
+import { normalizeNameForMatching } from "./achievement-service";
 
 export type ReportInput = {
   date: string;
@@ -23,15 +24,15 @@ function deriveStatus(input: ReportInput): ReportStatus {
 
 export function validateReport(
   input: ReportInput,
-  currentUserId: string,
+  mustamiId: string,
   existing: Report[],
   editingId?: string,
 ): ReportValidation {
   const errors: Record<string, string> = {};
   if (!input.date) errors["date"] = "Tanggal wajib diisi.";
   if (!input.teacherId) errors["teacherId"] = "Nama guru wajib dipilih.";
-  else if (input.teacherId === currentUserId)
-    errors["teacherId"] = "Anda tidak dapat menilai diri sendiri.";
+  else if (input.teacherId === mustamiId)
+    errors["teacherId"] = "Guru penyetor dan mustami' tidak boleh orang yang sama.";
   if (!input.materialDetail.trim()) errors["materialDetail"] = "Rincian materi wajib diisi.";
   else if (input.materialDetail.trim().length > 160)
     errors["materialDetail"] = "Maksimal 160 karakter.";
@@ -45,7 +46,7 @@ export function validateReport(
       !r.isDeleted &&
       r.id !== editingId &&
       r.teacherId === input.teacherId &&
-      r.mustamiId === currentUserId &&
+      r.mustamiId === mustamiId &&
       r.date === input.date &&
       r.material === input.material &&
       r.reference.trim().toLowerCase() === input.reference.trim().toLowerCase(),
@@ -208,11 +209,25 @@ export function restoreReport(id: string, actorId: string): Report | undefined {
 /** Setoran yang diterima guru (My Upgrading Progress). */
 export function progressOf(reports: Report[], teacherId: string): Report[] {
   if (!Array.isArray(reports)) return [];
-  return reports.filter((r) => Boolean(r && !r.isDeleted && r.teacherId === teacherId));
+  const teacherObj = teacherRepo.list().find((t) => t.id === teacherId) || teacherRepo.get(teacherId);
+  const nameNorm = normalizeNameForMatching(teacherObj?.name);
+  return reports.filter((r) => {
+    if (!r || r.isDeleted) return false;
+    if (r.teacherId === teacherId) return true;
+    if (nameNorm && r.teacherName && normalizeNameForMatching(r.teacherName) === nameNorm) return true;
+    return false;
+  });
 }
 
 /** Setoran yang dinilai guru sebagai mustami' (My Assessment Activity). */
 export function assessmentsOf(reports: Report[], teacherId: string): Report[] {
   if (!Array.isArray(reports)) return [];
-  return reports.filter((r) => Boolean(r && !r.isDeleted && r.mustamiId === teacherId));
+  const teacherObj = teacherRepo.list().find((t) => t.id === teacherId) || teacherRepo.get(teacherId);
+  const nameNorm = normalizeNameForMatching(teacherObj?.name);
+  return reports.filter((r) => {
+    if (!r || r.isDeleted) return false;
+    if (r.mustamiId === teacherId) return true;
+    if (nameNorm && r.mustamiName && normalizeNameForMatching(r.mustamiName) === nameNorm) return true;
+    return false;
+  });
 }

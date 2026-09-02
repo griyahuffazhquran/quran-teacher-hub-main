@@ -319,17 +319,15 @@ function Page() {
         </div>
       </div>
 
-      <Tabs defaultValue={isUpgrader ? "all" : "progress"}>
+      <Tabs defaultValue="all">
         <TabsList className="w-full overflow-x-auto sm:w-auto">
-          {isUpgrader && <TabsTrigger value="all">Semua Setoran</TabsTrigger>}
+          <TabsTrigger value="all">Semua Setoran</TabsTrigger>
           <TabsTrigger value="progress">My Upgrading Progress</TabsTrigger>
           <TabsTrigger value="assessment">My Assessment Activity</TabsTrigger>
         </TabsList>
-        {isUpgrader && (
-          <TabsContent value="all" className="mt-4">
-            {renderContent(allReports, true, "Belum ada setoran tercatat.")}
-          </TabsContent>
-        )}
+        <TabsContent value="all" className="mt-4">
+          {renderContent(allReports, isUpgrader, "Belum ada setoran tercatat.")}
+        </TabsContent>
         <TabsContent value="progress" className="mt-4">
           {renderContent(myProgress, false, "Belum ada setoran yang disimak oleh guru lain.")}
         </TabsContent>

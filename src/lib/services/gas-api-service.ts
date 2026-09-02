@@ -278,6 +278,20 @@ function normalizeRow(repoName: string, row: any): any {
         updatedAt,
       };
 
+    case "masterBadges":
+      return {
+        id: String(row["Kode Unik Lencana"] || row["Kode Lencana"] || row.code || row.ID || row.id || "").trim(),
+        code: String(row["Kode Unik Lencana"] || row["Kode Lencana"] || row.code || row.ID || row.id || "").trim().toUpperCase(),
+        title: String(row["Judul Lencana"] || row.title || row.Nama || "").trim(),
+        description: String(row.Deskripsi || row.description || "").trim(),
+        category: String(row.Kategori || row.category || "setoran").trim().toLowerCase(),
+        icon: String(row.Icon || row.icon || "Award").trim(),
+        points: Number(row["Poin XP"] || row.points || 0),
+        isDeleted,
+        createdAt,
+        updatedAt,
+      };
+
     case "activityLogs":
       return {
         id,
@@ -366,11 +380,15 @@ export async function syncAllFromGas(): Promise<{ ok: boolean; count?: number; e
 export async function fetchMasterBadgesFromGas(): Promise<any[]> {
   if (!isGasApiConfigured()) return [];
   try {
-    const res = await fetchFromGas("getMasterBadges");
+    let res = await fetchFromGas("getMasterBadges");
+    if (!res.ok || !Array.isArray(res.data) || res.data.length === 0) {
+      res = await fetchFromGas("getAchievements");
+    }
     if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
-      return res.data
+      const items = res.data
         .map((row: any) => normalizeRow("masterBadges", row))
-        .filter(Boolean);
+        .filter((item: any) => Boolean(item && item.code && item.title));
+      if (items.length > 0) return items;
     }
   } catch (err) {
     console.warn("Sinkronisasi masterBadges dilewati:", err);

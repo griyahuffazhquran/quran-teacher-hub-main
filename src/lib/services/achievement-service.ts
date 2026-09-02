@@ -78,6 +78,39 @@ export const teacherRanks: TeacherRank[] = [
   { level: 5, title: "Ustazh Al-Upgrading", minXp: 2000, badge: "🏆", color: "text-emerald-500" },
 ];
 
+export function getTeacherRanks(): TeacherRank[] {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("griya_teacher_ranks");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+  }
+  return teacherRanks;
+}
+
+export function saveTeacherRanks(newRanks: TeacherRank[]): TeacherRank[] {
+  const sorted = [...newRanks]
+    .sort((a, b) => a.minXp - b.minXp)
+    .map((r, i) => ({ ...r, level: i + 1 }));
+  if (typeof window !== "undefined") {
+    localStorage.setItem("griya_teacher_ranks", JSON.stringify(sorted));
+  }
+  return sorted;
+}
+
+export function normalizeNameForMatching(name: string | undefined | null): string {
+  if (!name) return "";
+  return String(name)
+    .trim()
+    .toLowerCase()
+    .replace(/v/g, "f")
+    .replace(/ph/g, "f")
+    .replace(/[\.\,\-\_\s]+/g, " ");
+}
+
 export function calculateTeacherXpAndRank(
   teacherId: string,
   reports: Report[] = [],
@@ -97,11 +130,27 @@ export function calculateTeacherXpAndRank(
 
   const activeRanks = customRanks && customRanks.length > 0
     ? [...customRanks].sort((a, b) => a.minXp - b.minXp)
-    : teacherRanks;
+    : getTeacherRanks();
 
-  const teacherReports = safeReports.filter((r) => r && r.teacherId === teacherId && !r.isDeleted);
-  const teacherTargets = safeTargets.filter((t) => t && t.teacherId === teacherId && !t.isDeleted);
-  const teacherMustami = safeReports.filter((r) => r && r.mustamiId === teacherId && !r.isDeleted);
+  const targetTeacher = teacherRepo.list().find((t) => t.id === teacherId) || teacherRepo.get(teacherId);
+  const nameNorm = normalizeNameForMatching(targetTeacher?.name);
+
+  const teacherReports = safeReports.filter((r) => {
+    if (!r || r.isDeleted) return false;
+    if (r.teacherId === teacherId) return true;
+    if (nameNorm && r.teacherName && normalizeNameForMatching(r.teacherName) === nameNorm) return true;
+    return false;
+  });
+
+  const teacherTargets = safeTargets.filter((t) => t && (t.teacherId === teacherId || (nameNorm && normalizeNameForMatching(t.teacherId) === nameNorm)) && !t.isDeleted);
+
+  const teacherMustami = safeReports.filter((r) => {
+    if (!r || r.isDeleted) return false;
+    if (r.mustamiId === teacherId) return true;
+    if (nameNorm && r.mustamiName && normalizeNameForMatching(r.mustamiName) === nameNorm) return true;
+    return false;
+  });
+
   const unlockedAchievements = safeAchievements.filter((a) => a && a.teacherId === teacherId && !a.isDeleted);
 
   // XP Breakdown calculation
@@ -193,9 +242,21 @@ export function evaluateTeacherAchievements(teacherId: string): void {
     }
   }
 
-  const teacherReports = reports.filter((r) => r.teacherId === teacherId);
-  const teacherTargets = targets.filter((t) => t.teacherId === teacherId);
-  const teacherMustami = reports.filter((r) => r.mustamiId === teacherId);
+  const nameNorm = normalizeNameForMatching(teacherObj?.name);
+
+  const teacherReports = reports.filter((r) => {
+    if (!r || r.isDeleted) return false;
+    if (r.teacherId === teacherId) return true;
+    if (nameNorm && r.teacherName && normalizeNameForMatching(r.teacherName) === nameNorm) return true;
+    return false;
+  });
+  const teacherTargets = targets.filter((t) => t && t.teacherId === teacherId && !t.isDeleted);
+  const teacherMustami = reports.filter((r) => {
+    if (!r || r.isDeleted) return false;
+    if (r.mustamiId === teacherId) return true;
+    if (nameNorm && r.mustamiName && normalizeNameForMatching(r.mustamiName) === nameNorm) return true;
+    return false;
+  });
 
   const newToUnlock: AchievementDefinition[] = [];
 

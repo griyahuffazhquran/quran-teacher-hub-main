@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { BookOpenText, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Send } from "lucide-react";
+import { BookOpenText, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Send, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +48,8 @@ function LoginPage() {
   const [resetName, setResetName] = useState("");
   const [resetPhone, setResetPhone] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (ready && user && !welcomeUser) void navigate({ to: "/" });
@@ -60,12 +62,21 @@ function LoginPage() {
     try {
       const result = await loginAsync(u, p);
       if (!result.ok) {
-        setError(result.error || "Gagal masuk.");
+        let msg = result.error || "Gagal masuk.";
+        if (msg.includes("Action POST tidak dikenal") || msg.toLowerCase().includes("action")) {
+          msg = "Username atau Password yang Anda masukkan salah. Silakan periksa kembali data login Anda.";
+        }
+        setError(msg);
+        setErrorMessage(msg);
+        setErrorDialogOpen(true);
         setLoading(false);
         return;
       }
       if (!result.user) {
-        setError("Gagal masuk.");
+        const msg = "Username atau Password yang Anda masukkan salah. Silakan periksa kembali data login Anda.";
+        setError(msg);
+        setErrorMessage(msg);
+        setErrorDialogOpen(true);
         setLoading(false);
         return;
       }
@@ -77,7 +88,10 @@ function LoginPage() {
       }, 2500);
     } catch (err) {
       console.error("Login failed:", err);
-      setError("Terjadi kesalahan saat masuk. Silakan coba lagi.");
+      const msg = "Username atau Password yang Anda masukkan salah. Silakan periksa kembali data login Anda.";
+      setError(msg);
+      setErrorMessage(msg);
+      setErrorDialogOpen(true);
       setLoading(false);
     }
   };
@@ -316,6 +330,30 @@ function LoginPage() {
           <div className="pt-3">
             <Button onClick={goToDashboard} className="w-full gap-2 shadow-md">
               <span>Lanjut ke Dashboard</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Login Error Alert Popup Dialog */}
+      <Dialog open={errorDialogOpen} onOpenChange={setErrorDialogOpen}>
+        <DialogContent className="max-w-md text-center p-6 space-y-4">
+          <div className="mx-auto grid size-16 place-items-center rounded-full bg-destructive/10 text-destructive border border-destructive/20 animate-shake">
+            <ShieldAlert className="size-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold tracking-tight text-foreground">
+              Gagal Masuk Aplikasi
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed px-2">
+              {errorMessage || "Username atau Password yang Anda masukkan tidak sesuai. Silakan periksa kembali data login Anda."}
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <Button variant="default" onClick={() => setErrorDialogOpen(false)} className="w-full font-semibold shadow-md">
+              <span>Coba Lagi</span>
             </Button>
           </div>
         </DialogContent>

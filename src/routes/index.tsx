@@ -411,7 +411,7 @@ function Dashboard() {
       </div>
 
       {/* Dashboard Main Content with Tabs */}
-      <Tabs defaultValue={isUpgrader ? "all" : "progress"} className="space-y-4">
+      <Tabs key={isUpgrader ? "upgrader" : "teacher"} defaultValue={isUpgrader ? "all" : "progress"} className="space-y-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
             {isUpgrader && (

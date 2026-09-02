@@ -72,24 +72,28 @@ export function ReportFormDialog({
   editing?: Report | undefined;
 }) {
   const [form, setForm] = useState<ReportInput>(emptyInput);
+  const [selectedMustamiId, setSelectedMustamiId] = useState<string>(currentUser.id);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setForm(editing ? fromReport(editing) : emptyInput());
+    setSelectedMustamiId(editing?.mustamiId || currentUser.id);
     setErrors({});
     setSaving(false);
-  }, [open, editing]);
+  }, [open, editing, currentUser.id]);
 
   const set = <K extends keyof ReportInput>(key: K, value: ReportInput[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const options = teachers.filter((t) => t.id !== currentUser.id && t.status === "aktif");
+  const activeTeachers = teachers.filter((t) => t.status === "aktif");
+  const options = activeTeachers.filter((t) => t.id !== selectedMustamiId);
 
   const submit = async () => {
     if (saving) return;
-    const result = validateReport(form, currentUser.id, reports, editing?.id);
+    const mustamiUser = teachers.find((t) => t.id === selectedMustamiId) || currentUser;
+    const result = validateReport(form, mustamiUser.id, reports, editing?.id);
     if (!result.ok) {
       setErrors(result.errors);
       return;
@@ -98,10 +102,10 @@ export function ReportFormDialog({
     const assessedName = teachers.find((t) => t.id === form.teacherId)?.name ?? "guru";
     try {
       if (editing) {
-        updateReport(editing.id, form, currentUser, assessedName);
+        updateReport(editing.id, form, mustamiUser, assessedName);
         toast.success("Setoran diperbarui.");
       } else {
-        createReport(form, currentUser, assessedName);
+        createReport(form, mustamiUser, assessedName);
         toast.success(`Setoran ${assessedName} tersimpan.`);
       }
       onOpenChange(false);
@@ -118,11 +122,31 @@ export function ReportFormDialog({
         <DialogHeader>
           <DialogTitle>{editing ? "Edit Setoran" : "Setoran Baru"}</DialogTitle>
           <DialogDescription>
-            Anda tercatat sebagai Mustami': <strong>{currentUser.name}</strong>
+            {currentUser.role === "upgrader"
+              ? "Anda sedang menginputkan/mengedit data setoran sebagai Upgrader/Pengurus."
+              : `Anda tercatat sebagai Mustami': ${currentUser.name}`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
+          {currentUser.role === "upgrader" && (
+            <div className="grid gap-2">
+              <Label>Mustami' (Guru Penyimak)</Label>
+              <Select value={selectedMustamiId} onValueChange={setSelectedMustamiId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Mustami' (Penyimak)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeTeachers.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name} {t.id === currentUser.id ? "(Saya)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid gap-2">
             <Label htmlFor="date">Tanggal</Label>
             <Input

@@ -52,6 +52,8 @@ import { achievementRepo, reportRepo, targetRepo, teacherRepo } from "@/lib/data
 import { fetchMasterBadgesFromGas, pushMutationToGas } from "@/lib/services/gas-api-service";
 import {
   calculateTeacherXpAndRank,
+  getTeacherRanks,
+  saveTeacherRanks,
   masterAchievements as initialMasterAchievements,
   teacherRanks as initialTeacherRanks,
   type AchievementDefinition,
@@ -119,29 +121,11 @@ export function AchievementsPage() {
   const [deleteBadgeTarget, setDeleteBadgeTarget] = useState<AchievementDefinition | null>(null);
 
   // Dynamic Ranks / Gelar Upgrading State (Persisted in localStorage)
-  const [customRanks, setCustomRanks] = useState<TeacherRank[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("griya_teacher_ranks");
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        } catch {
-          // fallback to initial
-        }
-      }
-    }
-    return initialTeacherRanks;
-  });
+  const [customRanks, setCustomRanks] = useState<TeacherRank[]>(() => getTeacherRanks());
 
   const saveRanks = (newRanks: TeacherRank[]) => {
-    const sorted = [...newRanks]
-      .sort((a, b) => a.minXp - b.minXp)
-      .map((r, i) => ({ ...r, level: i + 1 }));
-    setCustomRanks(sorted);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("griya_teacher_ranks", JSON.stringify(sorted));
-    }
+    const updated = saveTeacherRanks(newRanks);
+    setCustomRanks(updated);
   };
 
   // Gelar Upgrading CRUD State
@@ -364,8 +348,6 @@ export function AchievementsPage() {
       unlockedAt: new Date().toISOString(),
     });
 
-    pushMutationToGas("achievements", "create", createdBadge);
-
     notify({
       title: `Hadiah Lencana dari Pengurus! 🏆`,
       body: `Selamat ${targetTeacher.name}! Pengurus secara khusus memberi Anda lencana "${badgeDef.title}".`,
@@ -520,7 +502,7 @@ export function AchievementsPage() {
             )}
             {isUpgrader && (
               <TabsTrigger value="badges" className="w-full min-h-10 px-3 text-xs sm:text-sm font-semibold gap-2 justify-center whitespace-normal text-center leading-tight py-2">
-                <Award className="size-4 shrink-0" /> <span>Lencana Master</span>
+                <Award className="size-4 shrink-0 text-amber-500" /> <span>Lencana Master</span>
               </TabsTrigger>
             )}
             {isUpgrader && (
@@ -669,54 +651,72 @@ export function AchievementsPage() {
             </TabsContent>
           )}
 
-          {/* TAB 3: MASTER BADGES CRUD (UPGRADER ONLY) */}
+          {/* TAB 3: MASTER BADGES CATALOG & CRUD (UPGRADER ONLY) */}
           {isUpgrader && (
             <TabsContent value="badges" className="space-y-4">
-              <div className="grid gap-3 md:grid-cols-2">
-                {masterBadges.map((badge) => (
-                  <Card key={badge.code} className="relative overflow-hidden border border-border">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                            <Award className="size-5" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-sm font-bold">{badge.title}</CardTitle>
-                            <Badge variant="outline" className="text-[10px] uppercase font-semibold">
-                              {badge.category}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-3 flex-wrap gap-2">
+                  <div>
+                    <CardTitle className="text-base font-bold flex items-center gap-2">
+                      <Award className="size-5 text-amber-500" /> Katalog Lencana Master Upgrading
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Daftar seluruh lencana penghargaan & apresiasi prestasi yang dapat diraih oleh para pengajar.
+                    </CardDescription>
+                  </div>
+                  <Button size="sm" onClick={handleOpenCreateBadge} className="h-9 text-xs gap-1.5 font-medium shadow-md">
+                    <Plus className="size-4" />
+                    <span>Tambah Lencana Baru</span>
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {(masterBadges.length > 0 ? masterBadges : initialMasterAchievements).map((badge) => (
+                      <Card key={badge.code} className="relative overflow-hidden border border-border">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                                <Award className="size-5" />
+                              </div>
+                              <div>
+                                <CardTitle className="text-sm font-bold">{badge.title}</CardTitle>
+                                <Badge variant="outline" className="text-[10px] uppercase font-semibold">
+                                  {badge.category}
+                                </Badge>
+                              </div>
+                            </div>
+                            <Badge className="bg-emerald-600 text-white font-bold text-xs">
+                              +{badge.points} XP
                             </Badge>
                           </div>
-                        </div>
-                        <Badge className="bg-emerald-600 text-white font-bold text-xs">
-                          +{badge.points} XP
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-xs pt-1">
-                      <p className="text-muted-foreground leading-relaxed">{badge.description}</p>
-                      <div className="flex items-center justify-end gap-2 border-t border-border/50 pt-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleOpenEditBadge(badge)}
-                          className="h-7 px-2 text-[11px] gap-1"
-                        >
-                          <Pencil className="size-3" /> Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setDeleteBadgeTarget(badge)}
-                          className="h-7 px-2 text-[11px] text-destructive hover:text-destructive gap-1"
-                        >
-                          <Trash2 className="size-3" /> Hapus
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-xs pt-1">
+                          <p className="text-muted-foreground leading-relaxed">{badge.description}</p>
+                          <div className="flex items-center justify-end gap-2 border-t border-border/50 pt-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleOpenEditBadge(badge)}
+                              className="h-7 px-2 text-[11px] gap-1"
+                            >
+                              <Pencil className="size-3" /> Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setDeleteBadgeTarget(badge)}
+                              className="h-7 px-2 text-[11px] text-destructive hover:text-destructive gap-1"
+                            >
+                              <Trash2 className="size-3" /> Hapus
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           )}
 

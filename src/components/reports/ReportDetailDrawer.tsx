@@ -19,12 +19,12 @@ import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from "@/hooks/use-session";
 import { formatDate, materialLabel, parseGrade, statusLabel, teacherName } from "@/lib/data/selectors";
@@ -84,11 +84,11 @@ export function ReportDetailDrawer({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto flex flex-col justify-between p-6">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col justify-between p-6">
         <div className="space-y-5 pt-2">
           {/* Header */}
-          <SheetHeader className="text-left space-y-1">
+          <DialogHeader className="text-left space-y-1">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <Badge variant="secondary" className="font-semibold">
                 {materialLabel[report.material]}
@@ -100,14 +100,14 @@ export function ReportDetailDrawer({
                 {statusLabel[report.status]}
               </Badge>
             </div>
-            <SheetTitle className="text-xl font-bold text-foreground">
+            <DialogTitle className="text-xl font-bold text-foreground">
               Detail Setoran Guru
-            </SheetTitle>
-            <SheetDescription className="text-xs text-muted-foreground flex items-center gap-1.5 pt-0.5">
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground flex items-center gap-1.5 pt-0.5">
               <Calendar className="size-3.5 text-muted-foreground" />
               <span>Tanggal Setoran: {formatDate(report.date)}</span>
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
 
           {/* Drawer Content Tabs */}
           <Tabs defaultValue="detail" className="w-full">
@@ -262,7 +262,7 @@ export function ReportDetailDrawer({
             </>
           )}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
