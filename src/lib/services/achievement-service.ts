@@ -11,64 +11,7 @@ export type AchievementDefinition = {
   points: number;
 };
 
-export const masterAchievements: AchievementDefinition[] = [
-  {
-    code: "UPGRADER_MASTER",
-    title: "Master Upgrader",
-    description: "Lencana Permanen Pengurus & Upgrader Lembaga Griya Huffazh Quran.",
-    category: "umum",
-    icon: "ShieldCheck",
-    points: 0,
-  },
-  {
-    code: "ISTIQOMAH_5",
-    title: "Pengajar Istiqomah",
-    description: "Telah menyelesaikan minimal 5 setoran upgrading.",
-    category: "setoran",
-    icon: "BookCheck",
-    points: 0,
-  },
-  {
-    code: "GRADE_A_STREAK",
-    title: "Hafiz Mumtaz",
-    description: "Mendapatkan nilai A pada setoran hafalan.",
-    category: "setoran",
-    icon: "Award",
-    points: 0,
-  },
-  {
-    code: "FIRST_TARGET",
-    title: "Pionir Target",
-    description: "Berhasil menyelesaikan 1 target upgrading.",
-    category: "target",
-    icon: "Target",
-    points: 0,
-  },
-  {
-    code: "MUSTAMI_ACTIVE",
-    title: "Mustami' Teladan",
-    description: "Aktif menyimak dan mencatat minimal 3 setoran pengajar lain.",
-    category: "mustami",
-    icon: "CheckCheck",
-    points: 0,
-  },
-  {
-    code: "TAHSIN_SPECIALIST",
-    title: "Ahli Matn & Tajwid",
-    description: "Menyelesaikan setoran materi Matn dengan nilai A.",
-    category: "tahsin",
-    icon: "Sparkles",
-    points: 0,
-  },
-  {
-    code: "TARGET_MASTER",
-    title: "Master Upgrading",
-    description: "Tuntas menyelesaikan 3 target upgrading lembaga.",
-    category: "target",
-    icon: "Trophy",
-    points: 0,
-  },
-];
+export const masterAchievements: AchievementDefinition[] = [];
 
 export const teacherRanks: TeacherRank[] = [
   { level: 1, title: "Tholibul 'Ilm", minXp: 0, badge: "🌱", color: "text-slate-500" },
@@ -97,7 +40,7 @@ export function getActiveMasterBadges(): AchievementDefinition[] {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       } catch {}
     }
   }
