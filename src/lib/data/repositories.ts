@@ -26,19 +26,18 @@ import type {
   Teacher,
 } from "./types";
 
-export const teacherRepo = createRepository<Teacher>("teachers", seedTeachers);
-export const reportRepo = createRepository<Report>("reports", seedReports, migrateReports);
-export const targetRepo = createRepository<Target>("targets", seedTargets);
-export const reminderRepo = createRepository<Reminder>("reminders", seedReminders);
-export const achievementRepo = createRepository<Achievement>("achievements", seedAchievements);
-export const announcementRepo = createRepository<Announcement>("announcements", seedAnnouncements);
-export const feedbackRepo = createRepository<Feedback>("feedbacks", seedFeedbacks);
-export const commentRepo = createRepository<ReportComment>("comments", seedComments);
-export const notificationRepo = createRepository<NotificationItem>(
-  "notifications",
-  seedNotifications,
-);
-export const activityRepo = createRepository<ActivityLog>("activityLogs", seedActivityLogs);
+const EMPTY_INIT = () => [];
+
+export const teacherRepo = createRepository<Teacher>("teachers", EMPTY_INIT);
+export const reportRepo = createRepository<Report>("reports", EMPTY_INIT, migrateReports);
+export const targetRepo = createRepository<Target>("targets", EMPTY_INIT);
+export const reminderRepo = createRepository<Reminder>("reminders", EMPTY_INIT);
+export const achievementRepo = createRepository<Achievement>("achievements", EMPTY_INIT);
+export const announcementRepo = createRepository<Announcement>("announcements", EMPTY_INIT);
+export const feedbackRepo = createRepository<Feedback>("feedbacks", EMPTY_INIT);
+export const commentRepo = createRepository<ReportComment>("comments", EMPTY_INIT);
+export const notificationRepo = createRepository<NotificationItem>("notifications", EMPTY_INIT);
+export const activityRepo = createRepository<ActivityLog>("activityLogs", EMPTY_INIT);
 
 export const allRepos = [
   teacherRepo,
@@ -55,31 +54,9 @@ export const allRepos = [
 
 export function hydrateAll() {
   for (const repo of allRepos) repo.hydrate();
-  // Self-heal: If teachers repo is empty after hydration, re-seed
-  if (teacherRepo.list().length === 0) {
-    teacherRepo.replaceAll(seedTeachers());
-    reportRepo.replaceAll(seedReports());
-    targetRepo.replaceAll(seedTargets());
-    reminderRepo.replaceAll(seedReminders());
-    achievementRepo.replaceAll(seedAchievements());
-    announcementRepo.replaceAll(seedAnnouncements());
-    feedbackRepo.replaceAll(seedFeedbacks());
-    commentRepo.replaceAll(seedComments());
-    notificationRepo.replaceAll(seedNotifications());
-    activityRepo.replaceAll(seedActivityLogs());
-  }
 }
 
 export function resetDemoData() {
   resetAllData(allRepos.map((r) => r.name));
-  teacherRepo.replaceAll(seedTeachers());
-  reportRepo.replaceAll(seedReports());
-  targetRepo.replaceAll(seedTargets());
-  reminderRepo.replaceAll(seedReminders());
-  achievementRepo.replaceAll(seedAchievements());
-  announcementRepo.replaceAll(seedAnnouncements());
-  feedbackRepo.replaceAll(seedFeedbacks());
-  commentRepo.replaceAll(seedComments());
-  notificationRepo.replaceAll(seedNotifications());
-  activityRepo.replaceAll(seedActivityLogs());
+  for (const repo of allRepos) repo.replaceAll([]);
 }
