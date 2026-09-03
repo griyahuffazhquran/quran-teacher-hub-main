@@ -42,6 +42,8 @@ function doGet(e) {
         return jsonResponse(getTableData("masterBadges"));
       case "getActivityLogs":
         return jsonResponse(getTableData("activityLogs"));
+      case "migrateTeacherIds":
+        return jsonResponse(migrateAndCleanAllTeacherIds());
       case "getPresence":
         var cache = CacheService.getScriptCache();
         var rawCache = cache.get("ACTIVE_PRESENCE") || "{}";
@@ -399,4 +401,107 @@ function jsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(
     ContentService.MimeType.JSON
   );
+}
+
+/**
+ * Custom UI Menu in Google Sheets
+ */
+function onOpen() {
+  try {
+    var ui = SpreadsheetApp.getUi();
+    ui.createMenu("🚀 Upgrading Engine")
+      .addItem("Migrasi & Bersihkan ID Guru", "migrateAndCleanAllTeacherIds")
+      .addToUi();
+  } catch (e) {
+    // ignore if running in web app execution context
+  }
+}
+
+/**
+ * Migrates all teacher IDs to clean unique IDs (e.g. tea_001, tea_002)
+ * and updates all references across all sheets in the spreadsheet automatically.
+ */
+function migrateAndCleanAllTeacherIds() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = findSheetSafely(ss, "teachers");
+  if (!sheet) return { ok: false, error: "Sheet teachers tidak ditemukan." };
+
+  var values = sheet.getDataRange().getValues();
+  if (values.length < 2) return { ok: false, error: "Sheet teachers kosong." };
+
+  var headers = values[0];
+  var idColIdx = headers.indexOf("ID");
+  if (idColIdx === -1) idColIdx = headers.indexOf("id");
+  if (idColIdx === -1) return { ok: false, error: "Kolom ID tidak ditemukan di sheet teachers." };
+
+  var idMap = {};
+  var teacherCount = 0;
+
+  // Build clean ID mapping (tea_001, tea_002, ...)
+  for (var r = 1; r < values.length; r++) {
+    var oldId = String(values[r][idColIdx]).trim();
+    if (!oldId) continue;
+
+    teacherCount++;
+    var numStr = ("000" + teacherCount).slice(-3);
+    var newId = "tea_" + numStr;
+
+    idMap[oldId] = newId;
+
+    // Update ID cell in teachers sheet
+    sheet.getRange(r + 1, idColIdx + 1).setValue(newId);
+  }
+
+  // Cascading replacement across all sheets in spreadsheet
+  var allSheets = ss.getSheets();
+  var updatedCellsCount = 0;
+
+  for (var s = 0; s < allSheets.length; s++) {
+    var curSheet = allSheets[s];
+    var dataRange = curSheet.getDataRange();
+    var sheetValues = dataRange.getValues();
+    if (sheetValues.length < 2) continue;
+
+    var curHeaders = sheetValues[0];
+    var targetCols = [];
+
+    // Find all columns that store teacher IDs across all sheets
+    for (var c = 0; c < curHeaders.length; c++) {
+      var h = String(curHeaders[c]).trim();
+      if (
+        h === "ID Guru" ||
+        h === "teacherId" ||
+        h === "ID Mustami" ||
+        h === "ID Mustami'" ||
+        h === "mustamiId" ||
+        h === "ID Guru Dinilai" ||
+        h === "ID Aktor" ||
+        h === "actorId" ||
+        h === "ID Entitas Target" ||
+        h === "entityId"
+      ) {
+        targetCols.push(c);
+      }
+    }
+
+    if (targetCols.length === 0) continue;
+
+    // Replace values in matching columns with new clean IDs
+    for (var rowIdx = 1; rowIdx < sheetValues.length; rowIdx++) {
+      for (var k = 0; k < targetCols.length; k++) {
+        var colIdx = targetCols[k];
+        var cellVal = String(sheetValues[rowIdx][colIdx]).trim();
+        if (idMap[cellVal]) {
+          curSheet.getRange(rowIdx + 1, colIdx + 1).setValue(idMap[cellVal]);
+          updatedCellsCount++;
+        }
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    message: "Migrasi ID Guru berhasil! " + teacherCount + " ID guru diperbarui menjadi format rapi (tea_001, tea_002...) dan " + updatedCellsCount + " sel referensi di sheet lain telah disesuaikan.",
+    idMap: idMap
+  };
 }

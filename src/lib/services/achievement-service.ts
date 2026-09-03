@@ -91,6 +91,19 @@ export function getTeacherRanks(): TeacherRank[] {
   return teacherRanks;
 }
 
+export function getActiveMasterBadges(): AchievementDefinition[] {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("griya_master_badges");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+  }
+  return masterAchievements;
+}
+
 export function saveTeacherRanks(newRanks: TeacherRank[]): TeacherRank[] {
   const sorted = [...newRanks]
     .sort((a, b) => a.minXp - b.minXp)
@@ -225,8 +238,10 @@ export function evaluateTeacherAchievements(teacherId: string): void {
 
   const unlockedCodes = new Set(existingAchievements.map((a) => a.code));
 
+  const currentMasterBadges = getActiveMasterBadges();
+
   if (teacherObj?.role === "upgrader" && !unlockedCodes.has("UPGRADER_MASTER")) {
-    const def = masterAchievements.find((m) => m.code === "UPGRADER_MASTER");
+    const def = currentMasterBadges.find((m) => m.code === "UPGRADER_MASTER");
     if (def) {
       achievementRepo.create({
         teacherId,
@@ -235,7 +250,7 @@ export function evaluateTeacherAchievements(teacherId: string): void {
         description: def.description,
         category: def.category,
         icon: def.icon,
-        points: 0,
+        points: Number(def.points) || 0,
         unlockedAt: new Date().toISOString(),
       });
       unlockedCodes.add("UPGRADER_MASTER");
@@ -261,7 +276,7 @@ export function evaluateTeacherAchievements(teacherId: string): void {
   const newToUnlock: AchievementDefinition[] = [];
 
   const pushIfFound = (code: string) => {
-    const found = masterAchievements.find((m) => m.code === code);
+    const found = currentMasterBadges.find((m) => m.code === code);
     if (found) newToUnlock.push(found);
   };
 
