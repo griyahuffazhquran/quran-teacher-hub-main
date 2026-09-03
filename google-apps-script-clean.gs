@@ -42,6 +42,10 @@ function doGet(e) {
         return jsonResponse(getTableData("masterBadges"));
       case "getActivityLogs":
         return jsonResponse(getTableData("activityLogs"));
+      case "getTeacherRanks":
+        return jsonResponse(getTableData("teacherRanks"));
+      case "getXpConfig":
+        return jsonResponse(getTableData("xpConfig"));
       case "migrateTeacherIds":
         return jsonResponse(migrateAndCleanAllTeacherIds());
       case "getPresence":
@@ -152,6 +156,18 @@ function doPost(e) {
       return jsonResponse({ ok: false, error: "Username atau password salah." });
     }
 
+    if (action === "updateXpConfig") {
+      var xpData = {
+        ID: "cfg_1",
+        "XP Per Setoran": data.xpPerSetoran || 30,
+        "Bonus Grade A": data.bonusGradeA || 20,
+        "XP Per Mustami": data.xpPerMustami || 25,
+        "XP Per Target": data.xpPerTarget || 100,
+        "Updated At": new Date().toLocaleDateString("id-ID")
+      };
+      return jsonResponse(updateRowById("xpConfig", "cfg_1", xpData));
+    }
+
     // Single item mutations
     if (action.startsWith("add") || action.startsWith("create")) {
       var sheetName = getSheetNameFromAction(action);
@@ -182,13 +198,21 @@ function getSheetNameFromAction(action) {
 }
 
 function findSheetSafely(ss, sheetName) {
+  if (!ss) return null;
   var sheet = ss.getSheetByName(sheetName);
   if (sheet) return sheet;
+
   if (sheetName === "achievements") {
     return ss.getSheetByName("chievements") || ss.getSheetByName("Achievement") || ss.getSheetByName("Achievements");
   }
   if (sheetName === "masterBadges") {
     return ss.getSheetByName("masterBadges") || ss.getSheetByName("master_badges") || ss.getSheetByName("MasterBadges");
+  }
+  if (sheetName === "teacherRanks") {
+    return ss.getSheetByName("teacherRanks") || ss.getSheetByName("teacher_ranks") || ss.getSheetByName("ranks") || ss.getSheetByName("Ranks");
+  }
+  if (sheetName === "xpConfig") {
+    return ss.getSheetByName("xpConfig") || ss.getSheetByName("xp_config") || ss.getSheetByName("XpConfig");
   }
   return null;
 }
@@ -196,7 +220,13 @@ function findSheetSafely(ss, sheetName) {
 function getTableData(sheetName) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = findSheetSafely(ss, sheetName);
-  if (!sheet) return { ok: true, data: [] };
+  if (!sheet) {
+    if (sheetName === "teacherRanks" || sheetName === "xpConfig") {
+      setupAllRequiredSheets();
+      sheet = findSheetSafely(ss, sheetName);
+    }
+    if (!sheet) return { ok: true, data: [] };
+  }
 
   var values = sheet.getDataRange().getValues();
   if (values.length < 2) return { ok: true, data: [] };
@@ -215,7 +245,7 @@ function getTableData(sheetName) {
         if (row[j] !== "" && row[j] !== null) hasValue = true;
       }
     }
-    if (hasValue && obj.ID) {
+    if (hasValue && (obj.ID || obj.id || obj["ID Guru"] || obj["Nama Gelar"] || obj.Level || obj["Kode Lencana"])) {
       result.push(obj);
     }
   }
@@ -410,11 +440,41 @@ function onOpen() {
   try {
     var ui = SpreadsheetApp.getUi();
     ui.createMenu("🚀 Upgrading Engine")
+      .addItem("Inisialisasi Sheet Terbaru (Gelar & XP)", "setupAllRequiredSheets")
       .addItem("Migrasi & Bersihkan ID Guru", "migrateAndCleanAllTeacherIds")
       .addToUi();
   } catch (e) {
     // ignore if running in web app execution context
   }
+}
+
+/**
+ * Automatically creates any missing sheets (teacherRanks, xpConfig) safely
+ */
+function setupAllRequiredSheets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // 1. teacherRanks sheet
+  var ranksSheet = ss.getSheetByName("teacherRanks");
+  if (!ranksSheet) {
+    ranksSheet = ss.insertSheet("teacherRanks");
+    ranksSheet.appendRow(["ID", "Level", "Nama Gelar", "Syarat Min XP", "Badge Icon/Emoji", "Warna Class", "Status Dihapus", "Created At", "Updated At"]);
+    ranksSheet.appendRow(["rnk_1", 1, "Tholibul 'Ilm", 0, "🌱", "text-slate-500", "TIDAK", new Date().toLocaleDateString("id-ID"), new Date().toLocaleDateString("id-ID")]);
+    ranksSheet.appendRow(["rnk_2", 2, "Al-Mujtahid", 200, "⚡", "text-blue-500", "TIDAK", new Date().toLocaleDateString("id-ID"), new Date().toLocaleDateString("id-ID")]);
+    ranksSheet.appendRow(["rnk_3", 3, "Al-Hafizh Al-Mutqin", 500, "⭐", "text-amber-500", "TIDAK", new Date().toLocaleDateString("id-ID"), new Date().toLocaleDateString("id-ID")]);
+    ranksSheet.appendRow(["rnk_4", 4, "Al-Muqri' Al-Kabiir", 1000, "👑", "text-indigo-500", "TIDAK", new Date().toLocaleDateString("id-ID"), new Date().toLocaleDateString("id-ID")]);
+    ranksSheet.appendRow(["rnk_5", 5, "Ustazh Al-Upgrading", 2000, "🏆", "text-emerald-500", "TIDAK", new Date().toLocaleDateString("id-ID"), new Date().toLocaleDateString("id-ID")]);
+  }
+
+  // 2. xpConfig sheet
+  var xpSheet = ss.getSheetByName("xpConfig");
+  if (!xpSheet) {
+    xpSheet = ss.insertSheet("xpConfig");
+    xpSheet.appendRow(["ID", "XP Per Setoran", "Bonus Grade A", "XP Per Mustami", "XP Per Target", "Updated At"]);
+    xpSheet.appendRow(["cfg_1", 30, 20, 25, 100, new Date().toLocaleDateString("id-ID")]);
+  }
+
+  return { ok: true, message: "Sheet teacherRanks dan xpConfig berhasil disiapkan." };
 }
 
 /**

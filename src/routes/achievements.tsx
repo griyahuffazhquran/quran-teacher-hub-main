@@ -49,11 +49,12 @@ import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { useCollection } from "@/hooks/use-repository";
 import { useSession } from "@/hooks/use-session";
 import { achievementRepo, reportRepo, targetRepo, teacherRepo } from "@/lib/data/repositories";
-import { fetchMasterBadgesFromGas, pushMutationToGas } from "@/lib/services/gas-api-service";
+import { fetchMasterBadgesFromGas, fetchTeacherRanksFromGas, fetchXpConfigFromGas, saveXpConfigToGas, pushMutationToGas } from "@/lib/services/gas-api-service";
 import {
   calculateTeacherXpAndRank,
   getTeacherRanks,
   saveTeacherRanks,
+  evaluateAllTeachersAchievements,
   masterAchievements as initialMasterAchievements,
   teacherRanks as initialTeacherRanks,
   type AchievementDefinition,
@@ -105,6 +106,21 @@ export function AchievementsPage() {
         if (typeof window !== "undefined") {
           localStorage.setItem("griya_master_badges", JSON.stringify(remoteBadges));
         }
+      }
+    });
+
+    fetchTeacherRanksFromGas().then((remoteRanks) => {
+      if (remoteRanks && remoteRanks.length > 0) {
+        setCustomRanks(remoteRanks);
+      }
+    });
+
+    fetchXpConfigFromGas().then((cfg) => {
+      if (cfg) {
+        setXpPerSetoran(cfg.xpPerSetoran);
+        setBonusGradeA(cfg.bonusGradeA);
+        setXpPerMustami(cfg.xpPerMustami);
+        setXpPerTarget(cfg.xpPerTarget);
       }
     });
   }, []);
@@ -318,10 +334,23 @@ export function AchievementsPage() {
       setDeleteRankTarget(null);
       return;
     }
-    const filtered = customRanks.filter((r) => r.level !== deleteRankTarget.level);
+    const target = deleteRankTarget;
+    const filtered = customRanks.filter((r) => r.level !== target.level);
     saveRanks(filtered);
+    pushMutationToGas("teacherRanks", "delete", target);
     setDeleteRankTarget(null);
     toast.success("Gelar Upgrading berhasil dihapus.");
+  };
+
+  const handleSaveXpRules = async () => {
+    const config = { xpPerSetoran, bonusGradeA, xpPerMustami, xpPerTarget };
+    const ok = await saveXpConfigToGas(config);
+    if (ok) {
+      toast.success("Aturan Poin XP berhasil disimpan ke Google Spreadsheet!");
+      evaluateAllTeachersAchievements();
+    } else {
+      toast.error("Gagal menyimpan aturan XP ke Google Spreadsheet.");
+    }
   };
 
   // Manual Award submit
@@ -780,7 +809,7 @@ export function AchievementsPage() {
                   </div>
 
                   <div className="pt-2 flex justify-end">
-                    <Button onClick={() => toast.success("Aturan Poin XP berhasil disimpan.")} className="h-9 text-xs font-semibold gap-1.5">
+                    <Button onClick={handleSaveXpRules} className="h-9 text-xs font-semibold gap-1.5">
                       <Sparkles className="size-3.5" /> Simpan Pengaturan XP
                     </Button>
                   </div>

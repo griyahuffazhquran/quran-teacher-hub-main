@@ -1,5 +1,6 @@
 import { achievementRepo, reportRepo, targetRepo, teacherRepo } from "@/lib/data/repositories";
 import type { Achievement, AchievementCategory, Report, Target, TeacherRank } from "@/lib/data/types";
+import { pushMutationToGas } from "./gas-api-service";
 import { logActivity, notify } from "./notification-service";
 
 export type AchievementDefinition = {
@@ -11,9 +12,8 @@ export type AchievementDefinition = {
   points: number;
 };
 
-export const masterAchievements: AchievementDefinition[] = [];
-
-export const teacherRanks: TeacherRank[] = [
+export let masterAchievements: AchievementDefinition[] = [];
+export let teacherRanks: TeacherRank[] = [
   { level: 1, title: "Tholibul 'Ilm", minXp: 0, badge: "🌱", color: "text-slate-500" },
   { level: 2, title: "Al-Mujtahid", minXp: 200, badge: "⚡", color: "text-blue-500" },
   { level: 3, title: "Al-Hafizh Al-Mutqin", minXp: 500, badge: "⭐", color: "text-amber-500" },
@@ -21,29 +21,21 @@ export const teacherRanks: TeacherRank[] = [
   { level: 5, title: "Ustazh Al-Upgrading", minXp: 2000, badge: "🏆", color: "text-emerald-500" },
 ];
 
-export function getTeacherRanks(): TeacherRank[] {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem("griya_teacher_ranks");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {}
-    }
+export function setMasterAchievementsCache(list: AchievementDefinition[]): void {
+  masterAchievements = list;
+}
+
+export function setTeacherRanksCache(list: TeacherRank[]): void {
+  if (Array.isArray(list) && list.length > 0) {
+    teacherRanks = list.sort((a, b) => a.minXp - b.minXp);
   }
+}
+
+export function getTeacherRanks(): TeacherRank[] {
   return teacherRanks;
 }
 
 export function getActiveMasterBadges(): AchievementDefinition[] {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem("griya_master_badges");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {}
-    }
-  }
   return masterAchievements;
 }
 
@@ -51,8 +43,9 @@ export function saveTeacherRanks(newRanks: TeacherRank[]): TeacherRank[] {
   const sorted = [...newRanks]
     .sort((a, b) => a.minXp - b.minXp)
     .map((r, i) => ({ ...r, level: i + 1 }));
-  if (typeof window !== "undefined") {
-    localStorage.setItem("griya_teacher_ranks", JSON.stringify(sorted));
+  teacherRanks = sorted;
+  for (const r of sorted) {
+    pushMutationToGas("teacherRanks", "update", r);
   }
   return sorted;
 }
@@ -107,7 +100,12 @@ export function calculateTeacherXpAndRank(
     return false;
   });
 
-  const unlockedAchievements = safeAchievements.filter((a) => a && a.teacherId === teacherId && !a.isDeleted);
+  const unlockedAchievements = safeAchievements.filter((a) => {
+    if (!a || a.isDeleted) return false;
+    if (a.teacherId === teacherId) return true;
+    if (nameNorm && normalizeNameForMatching(a.teacherId) === nameNorm) return true;
+    return false;
+  });
 
   // XP Breakdown calculation
   const setoranRate = xpConfig?.xpPerSetoran ?? 30;
@@ -168,16 +166,22 @@ const recentEvaluations = new Map<string, number>();
 export function evaluateTeacherAchievements(teacherId: string): void {
   if (!teacherId) return;
 
-  // Throttle evaluations to max once every 3 seconds per teacherId
+  // Throttle evaluations to max once every 500ms per teacherId
   const now = Date.now();
   const lastEval = recentEvaluations.get(teacherId) || 0;
-  if (now - lastEval < 3000) return;
+  if (now - lastEval < 500) return;
   recentEvaluations.set(teacherId, now);
 
-  const teacherObj = teacherRepo.get(teacherId);
+  const teacherObj = teacherRepo.get(teacherId) || teacherRepo.list().find((t) => t.id === teacherId);
   const reports = reportRepo.list().filter((r) => r && !r.isDeleted);
   const targets = targetRepo.list().filter((t) => t && !t.isDeleted);
-  const existingAchievements = achievementRepo.list().filter((a) => a && a.teacherId === teacherId && !a.isDeleted);
+  const existingAchievements = achievementRepo.list().filter((a) => {
+    if (!a || a.isDeleted) return false;
+    if (a.teacherId === teacherId) return true;
+    const nameNorm = normalizeNameForMatching(teacherObj?.name);
+    if (nameNorm && normalizeNameForMatching(a.teacherId) === nameNorm) return true;
+    return false;
+  });
 
   const unlockedCodes = new Set(existingAchievements.map((a) => a.code));
 
@@ -186,7 +190,7 @@ export function evaluateTeacherAchievements(teacherId: string): void {
   if (teacherObj?.role === "upgrader" && !unlockedCodes.has("UPGRADER_MASTER")) {
     const def = currentMasterBadges.find((m) => m.code === "UPGRADER_MASTER");
     if (def) {
-      achievementRepo.create({
+      const created = achievementRepo.create({
         teacherId,
         code: def.code,
         title: def.title,
@@ -196,6 +200,7 @@ export function evaluateTeacherAchievements(teacherId: string): void {
         points: Number(def.points) || 0,
         unlockedAt: new Date().toISOString(),
       });
+      pushMutationToGas("achievements", "create", created);
       unlockedCodes.add("UPGRADER_MASTER");
     }
   }
@@ -208,7 +213,7 @@ export function evaluateTeacherAchievements(teacherId: string): void {
     if (nameNorm && r.teacherName && normalizeNameForMatching(r.teacherName) === nameNorm) return true;
     return false;
   });
-  const teacherTargets = targets.filter((t) => t && t.teacherId === teacherId && !t.isDeleted);
+  const teacherTargets = targets.filter((t) => t && (t.teacherId === teacherId || (nameNorm && normalizeNameForMatching(t.teacherId) === nameNorm)) && !t.isDeleted);
   const teacherMustami = reports.filter((r) => {
     if (!r || r.isDeleted) return false;
     if (r.mustamiId === teacherId) return true;
@@ -218,48 +223,59 @@ export function evaluateTeacherAchievements(teacherId: string): void {
 
   const newToUnlock: AchievementDefinition[] = [];
 
-  const pushIfFound = (code: string) => {
-    const found = currentMasterBadges.find((m) => m.code === code);
-    if (found) newToUnlock.push(found);
-  };
+  // Dynamic evaluation for all master badges defined in Google Spreadsheet catalog
+  for (const def of currentMasterBadges) {
+    if (!def || !def.code) continue;
+    if (unlockedCodes.has(def.code)) continue;
 
-  // Check ISTIQOMAH_5
-  if (!unlockedCodes.has("ISTIQOMAH_5") && teacherReports.length >= 5) {
-    pushIfFound("ISTIQOMAH_5");
+    const cat = (def.category || "").toLowerCase();
+    const codeUpper = (def.code || "").toUpperCase();
+    const descLower = (def.description || "").toLowerCase();
+    const titleLower = (def.title || "").toLowerCase();
+
+    // Parse required count from description (e.g. "minimal 20x", "5 setoran", "3 target")
+    const countMatch =
+      descLower.match(/(\d+)\s*x/) ||
+      descLower.match(/minimal\s*(\d+)/) ||
+      descLower.match(/(\d+)\s*setoran/) ||
+      descLower.match(/(\d+)\s*target/);
+    const requiredCount = countMatch && countMatch[1] ? parseInt(countMatch[1], 10) : 1;
+
+    let shouldUnlock = false;
+
+    if (cat === "mustami" || codeUpper.includes("MUSTAMI") || titleLower.includes("mustami")) {
+      if (teacherMustami.length >= requiredCount) {
+        shouldUnlock = true;
+      }
+    } else if (cat === "target" || codeUpper.includes("TARGET") || titleLower.includes("target")) {
+      const completedTargets = teacherTargets.filter((t) => t.status === "tercapai").length;
+      if (completedTargets >= requiredCount) {
+        shouldUnlock = true;
+      }
+    } else if (cat === "tahsin" || codeUpper.includes("TAHSIN") || titleLower.includes("matn")) {
+      if (teacherReports.some((r) => r.material === "matn" && r.grade === "A")) {
+        shouldUnlock = true;
+      }
+    } else if (cat === "setoran" || codeUpper.includes("SETORAN") || codeUpper.includes("GRADE_A")) {
+      if (descLower.includes("nilai a") || descLower.includes("grade a") || codeUpper.includes("GRADE_A")) {
+        const gradeACount = teacherReports.filter((r) => r.grade === "A").length;
+        if (gradeACount >= (requiredCount > 1 ? requiredCount : 1)) {
+          shouldUnlock = true;
+        }
+      } else {
+        if (teacherReports.length >= requiredCount) {
+          shouldUnlock = true;
+        }
+      }
+    }
+
+    if (shouldUnlock) {
+      newToUnlock.push(def);
+      unlockedCodes.add(def.code);
+    }
   }
 
-  // Check GRADE_A_STREAK
-  if (!unlockedCodes.has("GRADE_A_STREAK") && teacherReports.some((r) => r.grade === "A")) {
-    pushIfFound("GRADE_A_STREAK");
-  }
-
-  // Check FIRST_TARGET
-  if (!unlockedCodes.has("FIRST_TARGET") && teacherTargets.some((t) => t.status === "tercapai")) {
-    pushIfFound("FIRST_TARGET");
-  }
-
-  // Check MUSTAMI_ACTIVE
-  if (!unlockedCodes.has("MUSTAMI_ACTIVE") && teacherMustami.length >= 3) {
-    pushIfFound("MUSTAMI_ACTIVE");
-  }
-
-  // Check TAHSIN_SPECIALIST
-  if (
-    !unlockedCodes.has("TAHSIN_SPECIALIST") &&
-    teacherReports.some((r) => r.material === "matn" && r.grade === "A")
-  ) {
-    pushIfFound("TAHSIN_SPECIALIST");
-  }
-
-  // Check TARGET_MASTER
-  if (
-    !unlockedCodes.has("TARGET_MASTER") &&
-    teacherTargets.filter((t) => t.status === "tercapai").length >= 3
-  ) {
-    pushIfFound("TARGET_MASTER");
-  }
-
-  // Award achievements
+  // Award achievements and sync mutation to backend
   for (const def of newToUnlock) {
     if (!def) continue;
     const ach = achievementRepo.create({
@@ -269,9 +285,11 @@ export function evaluateTeacherAchievements(teacherId: string): void {
       description: def.description,
       category: def.category,
       icon: def.icon,
-      points: def.points || 0,
+      points: Number(def.points) || 0,
       unlockedAt: new Date().toISOString(),
     });
+
+    pushMutationToGas("achievements", "create", ach);
 
     notify({
       title: `Lencana Baru Terbuka! 🏆`,
@@ -289,5 +307,15 @@ export function evaluateTeacherAchievements(teacherId: string): void {
       entity: "achievements",
       entityId: ach.id,
     });
+  }
+}
+
+/** Evaluates achievements, XP, and Ranks for all active teachers */
+export function evaluateAllTeachersAchievements(): void {
+  const teachers = teacherRepo.list().filter((t) => t && !t.isDeleted);
+  for (const t of teachers) {
+    if (t && t.id) {
+      evaluateTeacherAchievements(t.id);
+    }
   }
 }

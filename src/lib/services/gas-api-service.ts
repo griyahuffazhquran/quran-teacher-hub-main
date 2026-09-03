@@ -1,8 +1,9 @@
 import { getGasApiUrl, isGasApiConfigured } from "@/lib/config/api-config";
 import { allRepos, hydrateAll } from "@/lib/data/repositories";
 import { parseGrade } from "@/lib/data/selectors";
-import type { Teacher } from "@/lib/data/types";
+import type { Teacher, TeacherRank } from "@/lib/data/types";
 import { setSession } from "./session-service";
+import { evaluateAllTeachersAchievements, setMasterAchievementsCache, setTeacherRanksCache } from "./achievement-service";
 
 export type GasResponse<T = any> = {
   ok: boolean;
@@ -316,6 +317,19 @@ function normalizeRow(repoName: string, row: any): any {
         updatedAt,
       };
 
+    case "teacherRanks":
+      return {
+        id: String(row.ID || row.id || `rnk_${row.Level || row.level}`).trim(),
+        level: Number(row.Level || row.level || 1),
+        title: String(row["Nama Gelar"] || row.title || "").trim(),
+        minXp: Number(row["Syarat Min XP"] || row.minXp || 0),
+        badge: String(row["Badge Icon/Emoji"] || row.badge || "🌱").trim(),
+        color: String(row["Warna Class"] || row.color || "text-slate-500").trim(),
+        isDeleted,
+        createdAt,
+        updatedAt,
+      };
+
     default:
       return { ...row, id, isDeleted, createdAt, updatedAt };
   }
@@ -368,11 +382,15 @@ export async function syncAllFromGas(): Promise<{ ok: boolean; count?: number; e
       }),
     );
 
-    // Also sync masterBadges to local cache
+    // Also sync masterBadges and teacherRanks directly to memory cache
     try {
       const remoteBadges = await fetchMasterBadgesFromGas();
-      if (remoteBadges && remoteBadges.length > 0 && typeof window !== "undefined") {
-        localStorage.setItem("griya_master_badges", JSON.stringify(remoteBadges));
+      if (remoteBadges && remoteBadges.length > 0) {
+        setMasterAchievementsCache(remoteBadges);
+      }
+      const remoteRanks = await fetchTeacherRanksFromGas();
+      if (remoteRanks && remoteRanks.length > 0) {
+        setTeacherRanksCache(remoteRanks);
       }
     } catch {}
 
@@ -381,6 +399,9 @@ export async function syncAllFromGas(): Promise<{ ok: boolean; count?: number; e
     }
 
     hydrateAll();
+    try {
+      evaluateAllTeachersAchievements();
+    } catch {}
 
     if (syncedCount === 0 && lastError) {
       return { ok: false, error: lastError };
@@ -410,6 +431,64 @@ export async function fetchMasterBadgesFromGas(): Promise<any[]> {
     console.warn("Sinkronisasi masterBadges dilewati:", err);
   }
   return [];
+}
+
+/** Fetch teacherRanks collection from Google Sheets */
+export async function fetchTeacherRanksFromGas(): Promise<TeacherRank[]> {
+  if (!isGasApiConfigured()) return [];
+  try {
+    const res = await fetchFromGas("getTeacherRanks");
+    if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+      const items = res.data
+        .map((row: any) => normalizeRow("teacherRanks", row))
+        .filter((item: any) => Boolean(item && item.title));
+      if (items.length > 0) return items as TeacherRank[];
+    }
+  } catch (err) {
+    console.warn("Sinkronisasi teacherRanks dilewati:", err);
+  }
+  return [];
+}
+
+/** Fetch xpConfig collection from Google Sheets */
+export async function fetchXpConfigFromGas(): Promise<{
+  xpPerSetoran: number;
+  bonusGradeA: number;
+  xpPerMustami: number;
+  xpPerTarget: number;
+}> {
+  const defaultConfig = { xpPerSetoran: 30, bonusGradeA: 20, xpPerMustami: 25, xpPerTarget: 100 };
+  if (!isGasApiConfigured()) return defaultConfig;
+
+  try {
+    const res = await fetchFromGas("getXpConfig");
+    if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+      const row = res.data[0];
+      if (row) {
+        return {
+          xpPerSetoran: Number(row["XP Per Setoran"] || row.xpPerSetoran || 30),
+          bonusGradeA: Number(row["Bonus Grade A"] || row.bonusGradeA || 20),
+          xpPerMustami: Number(row["XP Per Mustami"] || row.xpPerMustami || 25),
+          xpPerTarget: Number(row["XP Per Target"] || row.xpPerTarget || 100),
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("Sinkronisasi xpConfig dilewati:", err);
+  }
+  return defaultConfig;
+}
+
+/** Save updated xpConfig to Google Sheets via Apps Script API */
+export async function saveXpConfigToGas(config: {
+  xpPerSetoran: number;
+  bonusGradeA: number;
+  xpPerMustami: number;
+  xpPerTarget: number;
+}): Promise<boolean> {
+  if (!isGasApiConfigured()) return false;
+  const res = await postToGas("updateXpConfig", config);
+  return res.ok;
 }
 
 /** Login via Google Apps Script API */
@@ -615,6 +694,19 @@ export function toGasRow(repoName: string, item: any): Record<string, any> {
         "Nama Aktor": item.actorName || "",
         "Entitas Target": item.entity || "",
         "ID Entitas Target": item.entityId || "",
+        "Status Dihapus": statusDihapus,
+        "Created At": createdAt,
+        "Updated At": updatedAt,
+      };
+
+    case "teacherRanks":
+      return {
+        ID: item.id || `rnk_${item.level}`,
+        Level: Number(item.level || 1),
+        "Nama Gelar": item.title || "",
+        "Syarat Min XP": Number(item.minXp || 0),
+        "Badge Icon/Emoji": item.badge || "🌱",
+        "Warna Class": item.color || "text-slate-500",
         "Status Dihapus": statusDihapus,
         "Created At": createdAt,
         "Updated At": updatedAt,
