@@ -143,6 +143,8 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+import { initAutoSyncManager, triggerSync } from "../lib/services/auto-sync-service";
+
 const fallbackQueryClient = new QueryClient();
 
 function RootComponent() {
@@ -150,6 +152,9 @@ function RootComponent() {
   const queryClient = context?.queryClient ?? fallbackQueryClient;
 
   useEffect(() => {
+    initAutoSyncManager();
+    void triggerSync();
+
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("/sw.js").catch(() => {});

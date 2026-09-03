@@ -18,25 +18,29 @@ import { isGasApiConfigured } from "@/lib/config/api-config";
 import { loginWithGas } from "./gas-api-service";
 
 export async function loginAsync(username: string, password: string): Promise<LoginResult> {
+  const localRes = login(username, password);
+
   if (isGasApiConfigured()) {
-    const gasRes = await loginWithGas(username, password);
-    if (gasRes.ok && gasRes.user) {
-      return { ok: true, user: gasRes.user };
-    }
+    try {
+      const timeoutPromise = new Promise<{ ok: false; error: string }>((resolve) =>
+        setTimeout(() => resolve({ ok: false, error: "timeout" }), 3500),
+      );
 
-    // Smart fallback: If GAS API returns an error (e.g. 'Password salah' due to header casing 'Password' vs 'password' in GAS script),
-    // verify against the synced teachers database with DEMO_PASSWORD
-    const localRes = login(username, password);
-    if (localRes.ok) {
-      return localRes;
-    }
+      const gasRes = await Promise.race([loginWithGas(username, password), timeoutPromise]);
 
-    if (gasRes.error) {
-      return { ok: false, error: gasRes.error };
+      if (gasRes.ok && gasRes.user) {
+        return { ok: true, user: gasRes.user };
+      }
+      if (gasRes.error && gasRes.error !== "timeout") {
+        if (localRes.ok) return localRes;
+        return { ok: false, error: gasRes.error };
+      }
+    } catch {
+      // network exception fallback to localRes
     }
   }
 
-  return login(username, password);
+  return localRes;
 }
 
 export function login(username: string, password: string): LoginResult {
@@ -71,13 +75,9 @@ export function currentUser(): Teacher | undefined {
   hydrateAll();
   hydrateSession();
   const s = getSession();
-  if (!s) return undefined;
+  if (!s || !s.userId) return undefined;
   const list = teacherRepo.list().map(normalizeTeacher);
-  let found = list.find((t) => t.id === s.userId || (t.username || "").toLowerCase() === s.userId.toLowerCase());
-  if (!found && list.length > 0) {
-    found = list[0];
-    if (found) setSession({ userId: found.id, loggedInAt: new Date().toISOString() });
-  }
+  const found = list.find((t) => t.id === s.userId || (t.username || "").toLowerCase() === s.userId.toLowerCase());
   return found;
 }
 

@@ -3,7 +3,7 @@
  * Works seamlessly in local environment as well as sandboxed previews (e.g. Lovable editor).
  */
 export const STORAGE_PREFIX = "ghq";
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 3;
 
 const VERSION_KEY = `${STORAGE_PREFIX}:schema_version`;
 

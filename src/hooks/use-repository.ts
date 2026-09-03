@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Repository } from "@/lib/data/repository";
 import { hydrateAll } from "@/lib/data/repositories";
+import { initAutoSyncManager } from "@/lib/services/auto-sync-service";
 
 type Base = { id: string; createdAt: string; updatedAt: string };
 
@@ -15,6 +16,7 @@ export function useCollection<T extends Base>(repo: Repository<T>) {
 
   useEffect(() => {
     hydrateAll();
+    initAutoSyncManager();
     setReady(true);
   }, []);
 

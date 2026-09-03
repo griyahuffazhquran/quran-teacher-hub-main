@@ -84,7 +84,7 @@ export async function triggerSync(): Promise<{ ok: boolean; count?: number; erro
 let isInitialized = false;
 let pollingTimer: ReturnType<typeof setInterval> | null = null;
 
-export function initAutoSyncManager(pollingIntervalMs = 12000) {
+export function initAutoSyncManager(pollingIntervalMs = 6000) {
   if (isInitialized || typeof window === "undefined") return;
   isInitialized = true;
 
@@ -101,16 +101,13 @@ export function initAutoSyncManager(pollingIntervalMs = 12000) {
   }, pollingIntervalMs);
 
   // Sync on tab focus / visibility change
-  window.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && isGasApiConfigured()) {
+  const syncIfVisible = () => {
+    if ((document.visibilityState === "visible" || document.hasFocus()) && isGasApiConfigured()) {
       void triggerSync();
     }
-  });
+  };
 
-  // Sync on network reconnect
-  window.addEventListener("online", () => {
-    if (isGasApiConfigured()) {
-      void triggerSync();
-    }
-  });
+  window.addEventListener("visibilitychange", syncIfVisible);
+  window.addEventListener("focus", syncIfVisible);
+  window.addEventListener("online", syncIfVisible);
 }

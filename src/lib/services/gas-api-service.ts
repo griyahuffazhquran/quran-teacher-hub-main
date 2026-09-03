@@ -26,6 +26,8 @@ export async function fetchFromGas<T = any>(
   if (!rawUrl) return { ok: false, error: "URL API Google Apps Script belum dikonfigurasi." };
 
   const url = cleanUrl(rawUrl);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
 
   try {
     const params = new URLSearchParams({ action, ...queryParams });
@@ -33,7 +35,9 @@ export async function fetchFromGas<T = any>(
     const response = await fetch(fullUrl, {
       method: "GET",
       headers: { Accept: "application/json" },
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     const text = await response.text();
 
@@ -52,7 +56,8 @@ export async function fetchFromGas<T = any>(
       return { ok: false, error: "Respon dari Google Apps Script bukan JSON yang valid." };
     }
   } catch (err: any) {
-    return { ok: false, error: err?.message || "Gagal terhubung ke Google Apps Script API." };
+    clearTimeout(timeoutId);
+    return { ok: false, error: err?.name === "AbortError" ? "Koneksi API timeout." : (err?.message || "Gagal terhubung ke Google Apps Script API.") };
   }
 }
 
@@ -64,13 +69,17 @@ export async function postToGas<T = any>(
   if (!rawUrl) return { ok: false, error: "URL API Google Apps Script belum dikonfigurasi." };
 
   const url = cleanUrl(rawUrl);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
 
   try {
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ action, ...payload }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     const text = await response.text();
 
@@ -89,7 +98,8 @@ export async function postToGas<T = any>(
       return { ok: false, error: "Respon dari Google Apps Script bukan JSON yang valid." };
     }
   } catch (err: any) {
-    return { ok: false, error: err?.message || "Gagal mengirim data ke Google Apps Script API." };
+    clearTimeout(timeoutId);
+    return { ok: false, error: err?.name === "AbortError" ? "Koneksi API timeout." : (err?.message || "Gagal mengirim data ke Google Apps Script API.") };
   }
 }
 
@@ -338,17 +348,15 @@ export async function syncAllFromGas(): Promise<{ ok: boolean; count?: number; e
       actions.map(async (item) => {
         try {
           const res = await fetchFromGas(item.action);
-          if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+          if (res.ok && Array.isArray(res.data)) {
             const repo = allRepos.find((r) => r.name === item.repoName);
             if (repo) {
               const normalizedRows = res.data
                 .map((row: any) => normalizeRow(item.repoName, row))
                 .filter(Boolean);
 
-              if (normalizedRows.length > 0) {
-                repo.replaceAll(normalizedRows);
-                return { ok: true, error: undefined };
-              }
+              repo.replaceAll(normalizedRows);
+              return { ok: true, error: undefined };
             }
           } else if (!res.ok && res.error) {
             return { ok: false, error: res.error };
@@ -359,6 +367,14 @@ export async function syncAllFromGas(): Promise<{ ok: boolean; count?: number; e
         return { ok: false, error: undefined };
       }),
     );
+
+    // Also sync masterBadges to local cache
+    try {
+      const remoteBadges = await fetchMasterBadgesFromGas();
+      if (remoteBadges && remoteBadges.length > 0 && typeof window !== "undefined") {
+        localStorage.setItem("griya_master_badges", JSON.stringify(remoteBadges));
+      }
+    } catch {}
 
     for (const r of results) {
       if (r.ok) syncedCount++;
@@ -405,19 +421,19 @@ export async function loginWithGas(
     return { ok: false, error: "API Google Apps Script belum dikonfigurasi." };
   }
 
-  const res = await postToGas<{ user: any }>("login", { username, password });
+  const res = await postToGas<any>("login", { username, password });
+  const rawUser = (res as any).user || res.data?.user;
 
-  if (res.ok && res.data?.user) {
-    const raw = res.data.user;
-    const user = normalizeRow("teachers", raw) as Teacher;
+  if (res.ok && rawUser) {
+    const user = normalizeRow("teachers", rawUser) as Teacher;
 
-    if (user && user.id) {
-      setSession({ userId: user.id, loggedInAt: new Date().toISOString() });
+    if (user && (user.id || user.username)) {
+      setSession({ userId: String(user.id || user.username || ""), loggedInAt: new Date().toISOString() });
       return { ok: true, user };
     }
   }
 
-  return { ok: false, error: res.error || "Gagal login ke Google Apps Script." };
+  return { ok: false, error: res.error || "Username atau password salah." };
 }
 
 /** Format item row with mapped Indonesian keys for Google Sheets */
