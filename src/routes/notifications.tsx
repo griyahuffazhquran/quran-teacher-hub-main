@@ -42,6 +42,7 @@ import {
   markAsRead,
   notificationsFor,
 } from "@/lib/services/notification-service";
+import { NotificationDetailDialog } from "@/components/notifications/NotificationDetailDialog";
 import { listTeachers } from "@/lib/services/teacher-service";
 
 export const Route = createFileRoute("/notifications")({
@@ -91,6 +92,8 @@ function Page() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   const filteredNotifications = useMemo(() => {
     return userNotifications.filter((n) => {
@@ -114,13 +117,8 @@ function Page() {
 
   const handleNotificationClick = (n: NotificationItem) => {
     if (!n.read) markAsRead(n.id);
-    if (n.reportId) {
-      const rep = reports.find((r) => r.id === n.reportId);
-      if (rep) {
-        setSelectedReport(rep);
-        setDrawerOpen(true);
-      }
-    }
+    setSelectedNotification(n);
+    setDetailModalOpen(true);
   };
 
   const handleDeleteItem = (e: React.MouseEvent, id: string) => {
@@ -296,6 +294,20 @@ function Page() {
           <ActivityTimeline limit={25} />
         </TabsContent>
       </Tabs>
+
+      {/* Full Notification Detail Modal */}
+      <NotificationDetailDialog
+        notification={selectedNotification}
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+        onOpenReport={(repId) => {
+          const rep = reports.find((r) => r.id === repId);
+          if (rep) {
+            setSelectedReport(rep);
+            setDrawerOpen(true);
+          }
+        }}
+      />
 
       {/* Report Detail Drawer when clicking notification */}
       <ReportDetailDrawer
