@@ -1,6 +1,6 @@
 import { createId, ensureSchemaVersion, nowISO, readCollection, writeCollection } from "./storage";
 import type { ID } from "./types";
-import { pushMutationToGas } from "@/lib/services/gas-api-service";
+import { backendApiService } from "@/lib/services/backend-api-service";
 
 type Base = { id: ID; createdAt: string; updatedAt: string };
 
@@ -15,6 +15,7 @@ export type Repository<T extends Base> = {
   subscribe: (listener: () => void) => () => void;
   /** Loads persisted rows (or seeds on first run). Safe to call repeatedly. */
   hydrate: () => void;
+  syncFromBackend: () => Promise<void>;
 };
 
 export function createRepository<T extends Base>(
@@ -34,6 +35,19 @@ export function createRepository<T extends Base>(
     emit();
   };
 
+  const syncFromBackend = async () => {
+    if (typeof window === "undefined") return;
+    try {
+      const remoteData = await backendApiService.list<T>(name);
+      if (Array.isArray(remoteData) && remoteData.length > 0) {
+        rows = remoteData;
+        persist();
+      }
+    } catch (err) {
+      console.warn(`[Repository ${name}] Sync dari backend API gagal, menggunakan cache lokal:`, err);
+    }
+  };
+
   const hydrate = () => {
     if (hydrated || typeof window === "undefined") return;
     ensureSchemaVersion();
@@ -47,11 +61,14 @@ export function createRepository<T extends Base>(
     }
     hydrated = true;
     emit();
+    // Async background sync with SQLite backend API
+    void syncFromBackend();
   };
 
   return {
     name,
     hydrate,
+    syncFromBackend,
     list: () => {
       if (!hydrated && typeof window !== "undefined") {
         hydrate();
@@ -70,13 +87,18 @@ export function createRepository<T extends Base>(
       }
       const row = {
         ...(input as object),
-        id: createId(name.slice(0, 3)),
+        id: (input as any).id || createId(name.slice(0, 3)),
         createdAt: nowISO(),
         updatedAt: nowISO(),
       } as T;
       rows = [row, ...rows];
       persist();
-      void pushMutationToGas(name, "create", row);
+
+      // Async push to local backend API (SQLite)
+      backendApiService.create<T>(name, row).catch((err) => {
+        console.error(`[Repository ${name}] Gagal simpan ke backend API:`, err);
+      });
+
       return row;
     },
     update: (id, patch) => {
@@ -91,7 +113,11 @@ export function createRepository<T extends Base>(
       });
       if (updated) {
         persist();
-        void pushMutationToGas(name, "update", updated);
+
+        // Async update to local backend API (SQLite)
+        backendApiService.update<T>(name, id, updated).catch((err) => {
+          console.error(`[Repository ${name}] Gagal update ke backend API:`, err);
+        });
       }
       return updated;
     },
@@ -112,7 +138,11 @@ export function createRepository<T extends Base>(
       });
       if (updated) {
         persist();
-        void pushMutationToGas(name, "delete", updated);
+
+        // Async soft delete in local backend API (SQLite)
+        backendApiService.remove(name, id).catch((err) => {
+          console.error(`[Repository ${name}] Gagal delete di backend API:`, err);
+        });
       }
     },
     replaceAll: (next) => {

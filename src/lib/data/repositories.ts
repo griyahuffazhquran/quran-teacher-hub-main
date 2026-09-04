@@ -56,6 +56,23 @@ export function hydrateAll() {
   for (const repo of allRepos) repo.hydrate();
 }
 
+export async function syncAllFromBackend(): Promise<{ ok: boolean; count?: number; error?: string }> {
+  try {
+    let syncedCount = 0;
+    await Promise.all(
+      allRepos.map(async (repo) => {
+        try {
+          await repo.syncFromBackend();
+          syncedCount++;
+        } catch {}
+      }),
+    );
+    return { ok: true, count: syncedCount };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || "Gagal sinkronisasi dari Backend API." };
+  }
+}
+
 export function resetDemoData() {
   resetAllData(allRepos.map((r) => r.name));
   for (const repo of allRepos) repo.replaceAll([]);

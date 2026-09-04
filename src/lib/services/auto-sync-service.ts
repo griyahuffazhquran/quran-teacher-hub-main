@@ -34,13 +34,9 @@ export function subscribeAutoSync(listener: () => void): () => void {
 
 let syncPromise: Promise<{ ok: boolean; count?: number; error?: string }> | null = null;
 
-export async function triggerSync(): Promise<{ ok: boolean; count?: number; error?: string }> {
-  if (!isGasApiConfigured()) {
-    state = { ...state, status: "idle", errorMessage: null };
-    notify();
-    return { ok: false, error: "URL API belum dikonfigurasi." };
-  }
+import { syncAllFromBackend } from "@/lib/data/repositories";
 
+export async function triggerSync(): Promise<{ ok: boolean; count?: number; error?: string }> {
   if (syncPromise) return syncPromise;
 
   state = { ...state, status: "syncing", errorMessage: null };
@@ -48,7 +44,12 @@ export async function triggerSync(): Promise<{ ok: boolean; count?: number; erro
 
   syncPromise = (async () => {
     try {
-      const res = await syncAllFromGas();
+      let res = await syncAllFromBackend();
+      if (isGasApiConfigured()) {
+        const gasRes = await syncAllFromGas();
+        if (gasRes.ok) res = gasRes;
+      }
+
       if (res.ok) {
         state = {
           status: "synced",
@@ -88,21 +89,19 @@ export function initAutoSyncManager(pollingIntervalMs = 6000) {
   if (isInitialized || typeof window === "undefined") return;
   isInitialized = true;
 
-  // Initial sync on startup
-  if (isGasApiConfigured()) {
-    void triggerSync();
-  }
+  // Initial sync on startup from local backend API
+  void triggerSync();
 
   // Periodic background polling
   pollingTimer = setInterval(() => {
-    if (isGasApiConfigured() && document.visibilityState === "visible") {
+    if (document.visibilityState === "visible") {
       void triggerSync();
     }
   }, pollingIntervalMs);
 
   // Sync on tab focus / visibility change
   const syncIfVisible = () => {
-    if ((document.visibilityState === "visible" || document.hasFocus()) && isGasApiConfigured()) {
+    if (document.visibilityState === "visible" || document.hasFocus()) {
       void triggerSync();
     }
   };

@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { handleBackendApi } from "./backend/router";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -50,6 +51,11 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     const url = new URL(request.url);
+
+    // Backend SQLite REST API Handler
+    if (url.pathname.startsWith("/api/db")) {
+      return handleBackendApi(request);
+    }
 
     // Custom Universal Real-Time Presence API Endpoint
     if (url.pathname === "/api/presence") {

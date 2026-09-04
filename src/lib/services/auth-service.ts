@@ -17,7 +17,20 @@ export type LoginResult = { ok: true; user: Teacher } | { ok: false; error: stri
 import { isGasApiConfigured } from "@/lib/config/api-config";
 import { loginWithGas } from "./gas-api-service";
 
+import { backendApiService } from "./backend-api-service";
+
 export async function loginAsync(username: string, password: string): Promise<LoginResult> {
+  // First attempt login via Local Backend REST API (/api/db/auth/login)
+  try {
+    const user = await backendApiService.login(username, password);
+    if (user && user.id) {
+      setSession({ userId: user.id, loggedInAt: new Date().toISOString() });
+      return { ok: true, user };
+    }
+  } catch (err: any) {
+    console.warn("[Auth] Local Backend API login fallback:", err?.message);
+  }
+
   const localRes = login(username, password);
 
   if (isGasApiConfigured()) {
