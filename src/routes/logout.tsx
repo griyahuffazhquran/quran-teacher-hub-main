@@ -78,7 +78,7 @@ function LogoutPage() {
           </p>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
             Terima kasih atas dedikasi dan ikhtiar Anda dalam mendidik serta menyimak setoran Al-Qur'an.
-            Semoga Allah SWT senantiasa memberkahi ilmu, hafalan, dan mengganjar Anda dengan sebaik-baik balasan.
+            Semoga Allah Subhanahu wa Ta'ala senantiasa memberkahi ilmu, hafalan, dan mengganjar Anda dengan sebaik-baik balasan.
           </p>
         </div>
 

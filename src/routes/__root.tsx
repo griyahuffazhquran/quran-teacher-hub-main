@@ -83,6 +83,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
+      { httpEquiv: "Cache-Control", content: "no-cache, no-store, must-revalidate" },
+      { httpEquiv: "Pragma", content: "no-cache" },
+      { httpEquiv: "Expires", content: "0" },
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Dashboard | Griya Huffazh Quran Upgrading" },
@@ -144,6 +147,7 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 import { initAutoSyncManager, triggerSync } from "../lib/services/auto-sync-service";
+import { autoClearStaleDeviceCache } from "../lib/services/cache-management-service";
 
 const fallbackQueryClient = new QueryClient();
 
@@ -152,12 +156,19 @@ function RootComponent() {
   const queryClient = context?.queryClient ?? fallbackQueryClient;
 
   useEffect(() => {
+    // 1. Clear stale device cache automatically on new release/update
+    autoClearStaleDeviceCache();
+
+    // 2. Initialize real-time auto sync polling (6s interval & tab focus)
     initAutoSyncManager();
     void triggerSync();
 
+    // 3. Register & update Service Worker for auto-refresh
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").catch(() => {});
+        navigator.serviceWorker.register("/sw.js").then((reg) => {
+          reg.update();
+        }).catch(() => {});
       });
     }
   }, []);

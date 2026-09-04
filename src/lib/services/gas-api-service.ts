@@ -4,6 +4,7 @@ import { parseGrade } from "@/lib/data/selectors";
 import type { Teacher, TeacherRank } from "@/lib/data/types";
 import { setSession } from "./session-service";
 import { evaluateAllTeachersAchievements, setMasterAchievementsCache, setTeacherRanksCache } from "./achievement-service";
+import { evaluateAutomaticNotifications } from "./auto-notification-service";
 
 export type GasResponse<T = any> = {
   ok: boolean;
@@ -31,11 +32,12 @@ export async function fetchFromGas<T = any>(
   const timeoutId = setTimeout(() => controller.abort(), 6000);
 
   try {
-    const params = new URLSearchParams({ action, ...queryParams });
+    const params = new URLSearchParams({ action, _t: Date.now().toString(), ...queryParams });
     const fullUrl = `${url}?${params.toString()}`;
     const response = await fetch(fullUrl, {
       method: "GET",
-      headers: { Accept: "application/json" },
+      headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+      cache: "no-store",
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
@@ -401,6 +403,7 @@ export async function syncAllFromGas(): Promise<{ ok: boolean; count?: number; e
     hydrateAll();
     try {
       evaluateAllTeachersAchievements();
+      evaluateAutomaticNotifications();
     } catch {}
 
     if (syncedCount === 0 && lastError) {
@@ -731,6 +734,8 @@ export async function pushMutationToGas(
   let action = "";
   if (repoName === "masterBadges") {
     action = mutationType === "create" ? "addMasterBadge" : mutationType === "update" ? "updateMasterBadge" : "deleteMasterBadge";
+  } else if (repoName === "teacherRanks") {
+    action = mutationType === "create" ? "addTeacherRank" : mutationType === "update" ? "updateTeacherRank" : "deleteTeacherRank";
   } else if (mutationType === "create") {
     switch (repoName) {
       case "teachers":

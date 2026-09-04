@@ -13,12 +13,14 @@ export type AchievementDefinition = {
 };
 
 export let masterAchievements: AchievementDefinition[] = [];
-export let teacherRanks: TeacherRank[] = [
+export let teacherRanks: TeacherRank[] = [];
+
+export const FALLBACK_RANKS: TeacherRank[] = [
   { level: 1, title: "Tholibul 'Ilm", minXp: 0, badge: "🌱", color: "text-slate-500" },
-  { level: 2, title: "Al-Mujtahid", minXp: 200, badge: "⚡", color: "text-blue-500" },
-  { level: 3, title: "Al-Hafizh Al-Mutqin", minXp: 500, badge: "⭐", color: "text-amber-500" },
-  { level: 4, title: "Al-Muqri' Al-Kabiir", minXp: 1000, badge: "👑", color: "text-indigo-500" },
-  { level: 5, title: "Ustazh Al-Upgrading", minXp: 2000, badge: "🏆", color: "text-emerald-500" },
+  { level: 2, title: "Al-Mujtahid", minXp: 500, badge: "⚡", color: "text-blue-500" },
+  { level: 3, title: "Al-Hafizh Al-Mutqin", minXp: 1500, badge: "⭐", color: "text-amber-500" },
+  { level: 4, title: "Al-Muqri' Al-Kabiir", minXp: 4000, badge: "👑", color: "text-indigo-500" },
+  { level: 5, title: "Ustazh Al-Upgrading", minXp: 10000, badge: "🏆", color: "text-emerald-500" },
 ];
 
 export function setMasterAchievementsCache(list: AchievementDefinition[]): void {
@@ -27,12 +29,15 @@ export function setMasterAchievementsCache(list: AchievementDefinition[]): void 
 
 export function setTeacherRanksCache(list: TeacherRank[]): void {
   if (Array.isArray(list) && list.length > 0) {
-    teacherRanks = list.sort((a, b) => a.minXp - b.minXp);
+    teacherRanks = [...list].sort((a, b) => a.minXp - b.minXp);
   }
 }
 
 export function getTeacherRanks(): TeacherRank[] {
-  return teacherRanks;
+  if (Array.isArray(teacherRanks) && teacherRanks.length > 0) {
+    return teacherRanks;
+  }
+  return FALLBACK_RANKS;
 }
 
 export function getActiveMasterBadges(): AchievementDefinition[] {
@@ -55,31 +60,49 @@ export function normalizeNameForMatching(name: string | undefined | null): strin
   return String(name)
     .trim()
     .toLowerCase()
-    .replace(/v/g, "f")
-    .replace(/ph/g, "f")
-    .replace(/[\.\,\-\_\s]+/g, " ");
+    .replace(/^(ustadz|ustaz|ustadzah|ustazah|u\.?)\s+/, "");
 }
 
+/** Calculate XP breakdown and current Teacher Rank safely */
 export function calculateTeacherXpAndRank(
   teacherId: string,
   reports: Report[] = [],
   targets: Target[] = [],
   achievements: Achievement[] = [],
-  customRanks?: TeacherRank[],
+  customRanks: TeacherRank[] = [],
   xpConfig?: {
     xpPerSetoran?: number;
     bonusGradeA?: number;
     xpPerMustami?: number;
     xpPerTarget?: number;
   },
-) {
+): {
+  totalXp: number;
+  setoranXp: number;
+  gradeBonusXp: number;
+  mustamiXp: number;
+  targetCompletedXp: number;
+  achievementXp: number;
+  currentRank: TeacherRank;
+  nextRank: TeacherRank;
+  progressPct: number;
+  setoranCount: number;
+  mustamiCount: number;
+  targetCompletedCount: number;
+  achievementUnlockedCount: number;
+  completedTargetsCount: number;
+  unlockedBadgesCount: number;
+} {
   const safeReports = Array.isArray(reports) ? reports : [];
   const safeTargets = Array.isArray(targets) ? targets : [];
   const safeAchievements = Array.isArray(achievements) ? achievements : [];
 
-  const activeRanks = customRanks && customRanks.length > 0
-    ? [...customRanks].sort((a, b) => a.minXp - b.minXp)
-    : getTeacherRanks();
+  const rawRanks = (customRanks && customRanks.length > 0 ? customRanks : getTeacherRanks())
+    .filter((r): r is TeacherRank => Boolean(r && typeof r.minXp === "number"));
+
+  const activeRanks = rawRanks.length > 0
+    ? [...rawRanks].sort((a, b) => a.minXp - b.minXp)
+    : FALLBACK_RANKS;
 
   const targetTeacher = teacherRepo.list().find((t) => t.id === teacherId) || teacherRepo.get(teacherId);
   const nameNorm = normalizeNameForMatching(targetTeacher?.name);
@@ -113,30 +136,34 @@ export function calculateTeacherXpAndRank(
   const mustamiRate = xpConfig?.xpPerMustami ?? 25;
   const targetRate = xpConfig?.xpPerTarget ?? 100;
 
+  const completedTargetsCount = teacherTargets.filter((t) => t && t.status === "tercapai").length;
+  const unlockedBadgesCount = unlockedAchievements.length;
+
   const setoranXp = teacherReports.length * setoranRate;
   const gradeBonusXp = teacherReports.filter((r) => r && r.grade === "A").length * gradeARate;
   const mustamiXp = teacherMustami.length * mustamiRate;
-  const targetCompletedXp = teacherTargets.filter((t) => t && t.status === "tercapai").length * targetRate;
+  const targetCompletedXp = completedTargetsCount * targetRate;
   const achievementXp = unlockedAchievements.reduce((sum, a) => sum + (Number(a?.points) || 0), 0);
 
   const totalXp = setoranXp + gradeBonusXp + mustamiXp + targetCompletedXp + achievementXp;
 
   // Determine Current Rank Level
-  let currentRank: TeacherRank = activeRanks[0] || teacherRanks[0]!;
-  let nextRank: TeacherRank = activeRanks[1] || activeRanks[0] || teacherRanks[0]!;
+  const defaultRank = activeRanks[0] || FALLBACK_RANKS[0]!;
+  let currentRank: TeacherRank = defaultRank;
+  let nextRank: TeacherRank = activeRanks[1] || defaultRank;
 
   for (let i = activeRanks.length - 1; i >= 0; i--) {
-    const rank = activeRanks[i]!;
-    if (totalXp >= rank.minXp) {
+    const rank = activeRanks[i];
+    if (rank && totalXp >= rank.minXp) {
       currentRank = rank;
-      nextRank = activeRanks[i + 1] ?? rank;
+      nextRank = activeRanks[i + 1] || rank;
       break;
     }
   }
 
-  const currentLevelMin = currentRank.minXp;
-  const nextLevelMin = nextRank.minXp;
-  const isMaxLevel = currentRank.level === nextRank.level;
+  const currentLevelMin = currentRank?.minXp ?? 0;
+  const nextLevelMin = nextRank?.minXp ?? currentLevelMin;
+  const isMaxLevel = (currentRank?.level ?? 1) === (nextRank?.level ?? 1);
 
   const xpInCurrentLevel = totalXp - currentLevelMin;
   const levelXpRequired = nextLevelMin - currentLevelMin;
@@ -156,8 +183,10 @@ export function calculateTeacherXpAndRank(
     progressPct,
     setoranCount: teacherReports.length,
     mustamiCount: teacherMustami.length,
-    completedTargetsCount: teacherTargets.filter((t) => t && t.status === "tercapai").length,
-    unlockedBadgesCount: unlockedAchievements.length,
+    targetCompletedCount: completedTargetsCount,
+    achievementUnlockedCount: unlockedBadgesCount,
+    completedTargetsCount,
+    unlockedBadgesCount,
   };
 }
 

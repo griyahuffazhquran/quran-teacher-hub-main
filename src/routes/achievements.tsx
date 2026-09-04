@@ -19,6 +19,7 @@ import {
   Medal,
   TrendingUp,
   Eye,
+  Printer,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
@@ -54,6 +55,7 @@ import {
   calculateTeacherXpAndRank,
   getTeacherRanks,
   saveTeacherRanks,
+  setTeacherRanksCache,
   evaluateAllTeachersAchievements,
   masterAchievements as initialMasterAchievements,
   teacherRanks as initialTeacherRanks,
@@ -112,6 +114,7 @@ export function AchievementsPage() {
     fetchTeacherRanksFromGas().then((remoteRanks) => {
       if (remoteRanks && remoteRanks.length > 0) {
         setCustomRanks(remoteRanks);
+        setTeacherRanksCache(remoteRanks);
       }
     });
 
@@ -207,6 +210,103 @@ export function AchievementsPage() {
       })
       .sort((a, b) => b.totalXp - a.totalXp);
   }, [teachers, reports, targets, achievementRows, customRanks, xpPerSetoran, bonusGradeA, xpPerMustami, xpPerTarget]);
+
+  // Export & Print PDF for Leaderboard Klasemen
+  const handlePrintPdf = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Gagal membuka jendela cetak. Mohon izinkan pop-up di browser Anda.");
+      return;
+    }
+
+    const dateStr = new Date().toLocaleDateString("id-ID", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const rowsHtml = leaderboard
+      .map((item, idx) => {
+        const rankBadge = idx === 0 ? "🥇 #1" : idx === 1 ? "🥈 #2" : idx === 2 ? "🥉 #3" : `#${idx + 1}`;
+        return `
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 10px; text-align: center; font-weight: bold;">${rankBadge}</td>
+            <td style="padding: 10px; font-weight: 600;">${item.teacher.name}</td>
+            <td style="padding: 10px;">${item.currentRank.badge} ${item.currentRank.title}</td>
+            <td style="padding: 10px; text-align: center;">${item.setoranCount}</td>
+            <td style="padding: 10px; text-align: center;">${item.mustamiCount}</td>
+            <td style="padding: 10px; text-align: center;">${item.completedTargetsCount}</td>
+            <td style="padding: 10px; text-align: center;">${item.unlockedBadgesCount}</td>
+            <td style="padding: 10px; text-align: right; font-weight: bold; color: #0d9488;">${item.totalXp.toLocaleString("id-ID")} XP</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="id">
+      <head>
+        <meta charset="UTF-8">
+        <title>Klasemen Peringkat Guru Pengajar - Griya Huffazh Quran</title>
+        <style>
+          body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; margin: 30px; color: #1e293b; }
+          .header { text-align: center; border-bottom: 2px solid #0f766e; padding-bottom: 15px; margin-bottom: 20px; }
+          .header h1 { margin: 0; color: #0f766e; font-size: 22px; letter-spacing: 0.5px; }
+          .header p { margin: 5px 0 0; color: #64748b; font-size: 13px; font-weight: 500; }
+          .meta { display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 15px; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th { background-color: #f1f5f9; color: #475569; padding: 10px; text-align: left; font-weight: bold; border-bottom: 2px solid #cbd5e1; }
+          th.center, td.center { text-align: center; }
+          th.right, td.right { text-align: right; }
+          .footer { margin-top: 30px; text-align: right; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+          @media print {
+            body { margin: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>GRIYA HUFFAZH QURAN HUB</h1>
+          <p>Laporan Klasemen Peringkat & Perolehan XP Upgrading Guru Pengajar</p>
+        </div>
+        <div class="meta">
+          <span>📅 Tanggal Cetak: ${dateStr}</span>
+          <span>👥 Total Guru: ${leaderboard.length} Pengajar</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th class="center" style="width: 60px;">Rank</th>
+              <th>Nama Ustaz / Ustazah</th>
+              <th>Gelar Upgrading</th>
+              <th class="center">Setoran</th>
+              <th class="center">Mustami'</th>
+              <th class="center">Target Tuntas</th>
+              <th class="center">Lencana</th>
+              <th class="right">Total XP</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        <div class="footer">
+          <p>Dokumen ini dicetak otomatis dari Sistem Griya Huffazh Quran Hub pada ${new Date().toLocaleTimeString("id-ID")} WIB</p>
+        </div>
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
 
   // Open Create Badge
   const handleOpenCreateBadge = () => {
@@ -544,13 +644,24 @@ export function AchievementsPage() {
           {/* TAB 1: LEADERBOARD TABEL LENGKAP */}
           <TabsContent value="leaderboard" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <Users className="size-4 text-primary" /> Klasemen Peringkat Guru Pengajar
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Klik nama atau baris mana saja untuk melihat detail breakdown pencapaian & perolehan XP.
-                </CardDescription>
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <Users className="size-4 text-primary" /> Klasemen Peringkat Guru Pengajar
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Klik nama atau baris mana saja untuk melihat detail breakdown pencapaian & perolehan XP.
+                  </CardDescription>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handlePrintPdf}
+                  className="h-8 text-xs gap-1.5 font-medium border-primary/30 hover:bg-primary/5 text-primary shrink-0 self-start sm:self-auto"
+                >
+                  <Printer className="size-3.5" />
+                  <span>Cetak PDF</span>
+                </Button>
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
                 <table className="w-full text-left text-xs">

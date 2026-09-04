@@ -259,7 +259,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [ready, user, isUpgrader, pathname, navigate]);
 
-  // Persistent 1-Hour Inactivity Auto-Logout Tracker (Mobile & Desktop Resilient)
+  // Persistent 2-Hour Inactivity Auto-Logout Tracker (Mobile & Desktop Resilient)
   useEffect(() => {
     if (!ready || !user) return;
 

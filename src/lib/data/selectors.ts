@@ -4,6 +4,31 @@ export function teacherName(teachers: Teacher[], id: string): string {
   return teachers.find((t) => t.id === id)?.name ?? "—";
 }
 
+export function parseDateToTimestamp(dateStr?: string | null): number {
+  if (!dateStr) return 0;
+  const s = String(dateStr).trim();
+  const isoTime = Date.parse(s);
+  if (!isNaN(isoTime) && s.includes("-") && s.includes("T")) return isoTime;
+
+  const parts = s.split(/[\/\-\.]/);
+  if (parts.length === 3) {
+    const p1 = parseInt(parts[0] || "0", 10);
+    const p2 = parseInt(parts[1] || "0", 10);
+    const p3 = parseInt(parts[2] || "0", 10);
+
+    if (p1 > 31) {
+      const parsed = new Date(p1, p2 - 1, p3).getTime();
+      if (!isNaN(parsed)) return parsed;
+    } else {
+      let year = p3;
+      if (year < 100) year += 2000;
+      const parsed = new Date(year, p2 - 1, p1).getTime();
+      if (!isNaN(parsed)) return parsed;
+    }
+  }
+  return isNaN(isoTime) ? 0 : isoTime;
+}
+
 export function isThisMonth(dateISO: string): boolean {
   if (!dateISO) return false;
   let s = String(dateISO).trim();

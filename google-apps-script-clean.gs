@@ -441,6 +441,7 @@ function onOpen() {
     var ui = SpreadsheetApp.getUi();
     ui.createMenu("🚀 Upgrading Engine")
       .addItem("Inisialisasi Sheet Terbaru (Gelar & XP)", "setupAllRequiredSheets")
+      .addItem("🔔 Evaluasi Notifikasi Otomatis", "processDailyInactivityNotifications")
       .addItem("Migrasi & Bersihkan ID Guru", "migrateAndCleanAllTeacherIds")
       .addToUi();
   } catch (e) {
@@ -475,6 +476,148 @@ function setupAllRequiredSheets() {
   }
 
   return { ok: true, message: "Sheet teacherRanks dan xpConfig berhasil disiapkan." };
+}
+
+/**
+ * Evaluates inactivity and triggers automatic notifications (13.00 WIB daily, 2d, 4d, 6d educative).
+ */
+function processDailyInactivityNotifications() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var teachersSheet = findSheetSafely(ss, "teachers");
+  var reportsSheet = findSheetSafely(ss, "reports");
+  var notifsSheet = findSheetSafely(ss, "notifications");
+
+  if (!teachersSheet || !reportsSheet || !notifsSheet) return { ok: false, error: "Sheet tidak lengkap." };
+
+  var teachersData = getTableData("teachers").data;
+  var reportsData = getTableData("reports").data;
+  var notifsData = getTableData("notifications").data;
+
+  var now = new Date();
+  var currentHour = now.getHours();
+  var todayYmd = now.toLocaleDateString("id-ID");
+  var nowMs = now.getTime();
+  var createdCount = 0;
+
+  for (var i = 0; i < teachersData.length; i++) {
+    var teacher = teachersData[i];
+    if (!teacher || !teacher.ID || String(teacher["Status Dihapus"]).toUpperCase() === "YA") continue;
+
+    var teacherId = teacher.ID;
+    var rawTeacherName = String(teacher["Nama Guru"] || teacher.Nama || teacher.name || "").trim();
+    var nameCall = rawTeacherName ? (" " + rawTeacherName) : "";
+
+    var latestActivityMs = 0;
+    var submittedToday = false;
+
+    for (var j = 0; j < reportsData.length; j++) {
+      var r = reportsData[j];
+      if (!r || String(r["Status Dihapus"]).toUpperCase() === "YA") continue;
+      if (r["ID Guru"] === teacherId || r["Mustami ID"] === teacherId || r.teacherId === teacherId || r.mustamiId === teacherId) {
+        var rawDate = r["Tanggal Setoran"] || r.date || r["Created At"];
+        var d = new Date(rawDate);
+        var timeMs = d.getTime();
+        if (!isNaN(timeMs) && timeMs > latestActivityMs) {
+          latestActivityMs = timeMs;
+        }
+        if (!isNaN(timeMs) && d.toLocaleDateString("id-ID") === todayYmd) {
+          if (r["ID Guru"] === teacherId || r.teacherId === teacherId) submittedToday = true;
+        }
+      }
+    }
+
+    var daysInactive = latestActivityMs > 0
+      ? Math.floor((nowMs - latestActivityMs) / (1000 * 60 * 60 * 24))
+      : 7;
+
+    var hasNotifToday = function(targetTitle) {
+      for (var k = 0; k < notifsData.length; k++) {
+        var n = notifsData[k];
+        if ((n["User ID Target"] === teacherId || n.userId === teacherId) && (n.Judul === targetTitle || n.title === targetTitle)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // Rule 1: Daily 13.00 WIB
+    if (currentHour >= 13 && !submittedToday) {
+      var title1 = "⏰ Pengingat Setoran Hari Ini (13.00 WIB)";
+      if (!hasNotifToday(title1)) {
+        addRowPreventDuplicates("notifications", {
+          ID: "ntf_" + new Date().getTime() + "_" + Math.floor(Math.random()*1000),
+          "User ID Target": teacherId,
+          Judul: title1,
+          "Pesan/Body": "Assalamu'alaikum Ustaz/Ustazah" + nameCall + ". Pengingat harian jam 13.00 WIB: Anda belum melakukan setoran upgrading hari ini. Yuk sempatkan waktu sejenak untuk menyetorkan hafalan/materi ke penguji!",
+          Level: "warning",
+          "Tipe Notifikasi": "reminder",
+          "Status Dibaca": "TIDAK",
+          "Status Dihapus": "TIDAK",
+          "Created At": new Date().toLocaleString("id-ID")
+        });
+        createdCount++;
+      }
+    }
+
+    // Rule 2: 2 Days Inactive
+    if (daysInactive === 2) {
+      var title2 = "📌 Pengingat Keistiqomahan (2 Hari)";
+      if (!hasNotifToday(title2)) {
+        addRowPreventDuplicates("notifications", {
+          ID: "ntf_" + new Date().getTime() + "_" + Math.floor(Math.random()*1000),
+          "User ID Target": teacherId,
+          Judul: title2,
+          "Pesan/Body": "Assalamu'alaikum Ustaz/Ustazah" + nameCall + ". Sudah 2 hari belum ada aktivitas setoran maupun menyimak (mustami'). Mari jaga keistiqomahan harian upgrading Anda!",
+          Level: "info",
+          "Tipe Notifikasi": "reminder",
+          "Status Dibaca": "TIDAK",
+          "Status Dihapus": "TIDAK",
+          "Created At": new Date().toLocaleString("id-ID")
+        });
+        createdCount++;
+      }
+    }
+
+    // Rule 3: 4 Days Inactive
+    if (daysInactive === 4) {
+      var title3 = "⚠️ Evaluasi Keistiqomahan (4 Hari)";
+      if (!hasNotifToday(title3)) {
+        addRowPreventDuplicates("notifications", {
+          ID: "ntf_" + new Date().getTime() + "_" + Math.floor(Math.random()*1000),
+          "User ID Target": teacherId,
+          Judul: title3,
+          "Pesan/Body": "Assalamu'alaikum Ustaz/Ustazah" + nameCall + ". Sudah 4 hari tidak ada catatan setoran atau menyimak. Mari luangkan waktu sejenak untuk murojaah dan menyetor hafalan.",
+          Level: "warning",
+          "Tipe Notifikasi": "reminder",
+          "Status Dibaca": "TIDAK",
+          "Status Dihapus": "TIDAK",
+          "Created At": new Date().toLocaleString("id-ID")
+        });
+        createdCount++;
+      }
+    }
+
+    // Rule 4: 6+ Days Inactive (Educative, Motivational & Open Discussion)
+    if (daysInactive >= 6) {
+      var title4 = "💬 Pendampingan & Motivasi Upgrading (6 Hari)";
+      if (!hasNotifToday(title4)) {
+        addRowPreventDuplicates("notifications", {
+          ID: "ntf_" + new Date().getTime() + "_" + Math.floor(Math.random()*1000),
+          "User ID Target": teacherId,
+          Judul: title4,
+          "Pesan/Body": "Assalamu'alaikum Warahmatullahi Wabarakatuh, Ustaz/Ustazah" + nameCall + " yang dirahmati Allah Subhanahu wa Ta'ala.\n\nSudah " + daysInactive + " hari tidak ada aktivitas setoran hafalan maupun menyimak. Kami sangat memahami bahwa kesibukan mengajar, keluarga, dan amanah lainnya bisa menjadi tantangan tersendiri.\n\nRasulullah shallallahu 'alaihi wa sallam bersabda bahwa amalan yang paling dicintai Allah adalah amalan yang kontinyu (istiqomah) walaupun sedikit. Apabila Ustaz/Ustazah mengalami kendala (kesulitan waktu, kesehatan, materi, atau hal lainnya), pintu diskusi selalu terbuka lebar bersama pengurus/upgrader. Mari saling menguatkan dan melanjutkan kembali kebaikan ini!",
+          Level: "warning",
+          "Tipe Notifikasi": "reminder",
+          "Status Dibaca": "TIDAK",
+          "Status Dihapus": "TIDAK",
+          "Created At": new Date().toLocaleString("id-ID")
+        });
+        createdCount++;
+      }
+    }
+  }
+
+  return { ok: true, message: "Evaluasi notifikasi otomatis selesai.", createdCount: createdCount };
 }
 
 /**

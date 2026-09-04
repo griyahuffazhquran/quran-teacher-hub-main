@@ -83,6 +83,31 @@ type SortOption = "date-desc" | "date-asc" | "grade-desc" | "grade-asc";
 
 const gradeWeight: Record<Grade, number> = { A: 4, B: 3, C: 2, D: 1 };
 
+function parseDateToTimestamp(dateStr?: string | null): number {
+  if (!dateStr) return 0;
+  const s = String(dateStr).trim();
+  const isoTime = Date.parse(s);
+  if (!isNaN(isoTime) && s.includes("-") && s.includes("T")) return isoTime;
+
+  const parts = s.split(/[\/\-\.]/);
+  if (parts.length === 3) {
+    const p1 = parseInt(parts[0] || "0", 10);
+    const p2 = parseInt(parts[1] || "0", 10);
+    const p3 = parseInt(parts[2] || "0", 10);
+
+    if (p1 > 31) {
+      const parsed = new Date(p1, p2 - 1, p3).getTime();
+      if (!isNaN(parsed)) return parsed;
+    } else {
+      let year = p3;
+      if (year < 100) year += 2000;
+      const parsed = new Date(year, p2 - 1, p1).getTime();
+      if (!isNaN(parsed)) return parsed;
+    }
+  }
+  return isNaN(isoTime) ? 0 : isoTime;
+}
+
 function calculateProgressPercentage(reports: Report[]): string {
   if (reports.length === 0) return "0%";
   const completed = reports.filter(
@@ -108,6 +133,7 @@ function Dashboard() {
 
   // Search, Filter & Sort state
   const [query, setQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState<string>("");
   const [materialFilter, setMaterialFilter] = useState<string>("all");
   const [gradeFilter, setGradeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -196,6 +222,20 @@ function Dashboard() {
     const q = query.trim().toLowerCase();
 
     const filtered = rows.filter((r) => {
+      // Manual Date filter
+      if (dateFilter) {
+        const [targetY, targetM, targetD] = dateFilter.split("-").map(Number);
+        const reportTime = parseDateToTimestamp(r.date || r.createdAt);
+        if (reportTime > 0) {
+          const d = new Date(reportTime);
+          if (d.getFullYear() !== targetY || d.getMonth() + 1 !== targetM || d.getDate() !== targetD) {
+            return false;
+          }
+        } else {
+          return false;
+        }
+      }
+
       // Material filter
       if (materialFilter !== "all" && r.material !== materialFilter) return false;
       // Grade filter
@@ -220,11 +260,14 @@ function Dashboard() {
       return searchTarget.includes(q);
     });
 
-    // Sorting
+    // Sorting (Default: date-desc -> newest to oldest)
     return [...filtered].sort((a, b) => {
-      if (sortBy === "date-desc")
-        return (b.createdAt || b.date || "").localeCompare(a.createdAt || a.date || "");
-      if (sortBy === "date-asc") return (a.date || "").localeCompare(b.date || "");
+      if (sortBy === "date-desc") {
+        return parseDateToTimestamp(b.date || b.createdAt) - parseDateToTimestamp(a.date || a.createdAt);
+      }
+      if (sortBy === "date-asc") {
+        return parseDateToTimestamp(a.date || a.createdAt) - parseDateToTimestamp(b.date || b.createdAt);
+      }
       if (sortBy === "grade-desc") return (gradeWeight[b.grade] ?? 0) - (gradeWeight[a.grade] ?? 0);
       if (sortBy === "grade-asc") return (gradeWeight[a.grade] ?? 0) - (gradeWeight[b.grade] ?? 0);
       return 0;
@@ -233,17 +276,17 @@ function Dashboard() {
 
   const filteredProgress = useMemo(
     () => filterAndSort(scopeProgress),
-    [scopeProgress, query, materialFilter, gradeFilter, statusFilter, sortBy, teachers],
+    [scopeProgress, query, dateFilter, materialFilter, gradeFilter, statusFilter, sortBy, teachers],
   );
 
   const filteredAssessments = useMemo(
     () => filterAndSort(scopeAssessments),
-    [scopeAssessments, query, materialFilter, gradeFilter, statusFilter, sortBy, teachers],
+    [scopeAssessments, query, dateFilter, materialFilter, gradeFilter, statusFilter, sortBy, teachers],
   );
 
   const filteredAll = useMemo(
     () => filterAndSort(reports),
-    [reports, query, materialFilter, gradeFilter, statusFilter, sortBy, teachers],
+    [reports, query, dateFilter, materialFilter, gradeFilter, statusFilter, sortBy, teachers],
   );
 
   // Actions
@@ -466,7 +509,7 @@ function Dashboard() {
         </div>
 
         {/* Toolbar Controls: Search, Filter & Sorting */}
-        <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-5 bg-card p-3 rounded-xl border border-border">
+        <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-6 bg-card p-3 rounded-xl border border-border">
           {/* Search Input */}
           <div className="relative sm:col-span-2">
             <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
@@ -476,6 +519,27 @@ function Dashboard() {
               onChange={(e) => setQuery(e.target.value)}
               className="pl-8 text-xs h-9"
             />
+          </div>
+
+          {/* Date Manual Picker Filter */}
+          <div className="relative flex items-center">
+            <Input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="text-xs h-9"
+              title="Pilih Tanggal Setoran"
+            />
+            {dateFilter && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDateFilter("")}
+                className="absolute right-1.5 h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+              >
+                Reset
+              </Button>
+            )}
           </div>
 
           {/* Material Filter */}

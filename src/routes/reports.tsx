@@ -54,6 +54,32 @@ export const Route = createFileRoute("/reports")({
 
 type SortOption = "date-desc" | "date-asc" | "grade-desc" | "grade-asc";
 const gradeWeight: Record<Grade, number> = { A: 4, B: 3, C: 2, D: 1 };
+function parseDateToTimestamp(dateStr?: string | null): number {
+  if (!dateStr) return 0;
+  const s = String(dateStr).trim();
+  const isoTime = Date.parse(s);
+  if (!isNaN(isoTime) && s.includes("-") && s.includes("T")) return isoTime;
+
+  const parts = s.split(/[\/\-\.]/);
+  if (parts.length === 3) {
+    const p1 = parseInt(parts[0] || "0", 10);
+    const p2 = parseInt(parts[1] || "0", 10);
+    const p3 = parseInt(parts[2] || "0", 10);
+
+    if (p1 > 31) {
+      // YYYY-MM-DD
+      const parsed = new Date(p1, p2 - 1, p3).getTime();
+      if (!isNaN(parsed)) return parsed;
+    } else {
+      // DD/MM/YYYY
+      let year = p3;
+      if (year < 100) year += 2000;
+      const parsed = new Date(year, p2 - 1, p1).getTime();
+      if (!isNaN(parsed)) return parsed;
+    }
+  }
+  return isNaN(isoTime) ? 0 : isoTime;
+}
 
 function Page() {
   const { rows: reportRows, ready } = useCollection(reportRepo);
@@ -69,6 +95,7 @@ function Page() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [query, setQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState<string>("");
   const [material, setMaterial] = useState<string>("all");
   const [gradeFilter, setGradeFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("date-desc");
@@ -92,6 +119,20 @@ function Page() {
     const q = query.trim().toLowerCase();
 
     const filtered = rows.filter((r) => {
+      // Manual Date filter
+      if (dateFilter) {
+        const [targetY, targetM, targetD] = dateFilter.split("-").map(Number);
+        const reportTime = parseDateToTimestamp(r.date || r.createdAt);
+        if (reportTime > 0) {
+          const d = new Date(reportTime);
+          if (d.getFullYear() !== targetY || d.getMonth() + 1 !== targetM || d.getDate() !== targetD) {
+            return false;
+          }
+        } else {
+          return false;
+        }
+      }
+
       if (material !== "all" && r.material !== material) return false;
       if (gradeFilter !== "all" && r.grade !== gradeFilter) return false;
       if (!q) return true;
@@ -102,9 +143,14 @@ function Page() {
         .includes(q);
     });
 
+    // Default sorting: date-desc (Terbaru ke Terlama)
     return [...filtered].sort((a, b) => {
-      if (sortBy === "date-desc") return (b.createdAt || b.date || "").localeCompare(a.createdAt || a.date || "");
-      if (sortBy === "date-asc") return (a.date || "").localeCompare(b.date || "");
+      if (sortBy === "date-desc") {
+        return parseDateToTimestamp(b.date || b.createdAt) - parseDateToTimestamp(a.date || a.createdAt);
+      }
+      if (sortBy === "date-asc") {
+        return parseDateToTimestamp(a.date || a.createdAt) - parseDateToTimestamp(b.date || b.createdAt);
+      }
       if (sortBy === "grade-desc") return (gradeWeight[b.grade] ?? 0) - (gradeWeight[a.grade] ?? 0);
       if (sortBy === "grade-asc") return (gradeWeight[a.grade] ?? 0) - (gradeWeight[b.grade] ?? 0);
       return 0;
@@ -113,17 +159,17 @@ function Page() {
 
   const myProgress = useMemo(
     () => (user ? filterAndSort(progressOf(reports, user.id)) : []),
-    [reports, user, query, material, gradeFilter, sortBy, teachers],
+    [reports, user, query, dateFilter, material, gradeFilter, sortBy, teachers],
   );
 
   const myAssessments = useMemo(
     () => (user ? filterAndSort(assessmentsOf(reports, user.id)) : []),
-    [reports, user, query, material, gradeFilter, sortBy, teachers],
+    [reports, user, query, dateFilter, material, gradeFilter, sortBy, teachers],
   );
 
   const allReports = useMemo(
     () => filterAndSort(reports),
-    [reports, query, material, gradeFilter, sortBy, teachers],
+    [reports, query, dateFilter, material, gradeFilter, sortBy, teachers],
   );
 
   const openCreate = () => {
@@ -243,13 +289,33 @@ function Page() {
         }
       />
 
-      <div className="mb-4 grid gap-2 sm:grid-cols-2 md:grid-cols-5 bg-card p-3 rounded-xl border border-border">
+      <div className="mb-4 grid gap-2 sm:grid-cols-2 md:grid-cols-6 bg-card p-3 rounded-xl border border-border">
         <Input
           placeholder="Cari guru, materi, atau ayat..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="text-xs h-9 sm:col-span-2"
         />
+        {/* Manual Date Filter */}
+        <div className="relative flex items-center">
+          <Input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="text-xs h-9"
+            title="Pilih Tanggal Setoran"
+          />
+          {dateFilter && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDateFilter("")}
+              className="absolute right-1.5 h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+            >
+              Reset
+            </Button>
+          )}
+        </div>
         <Select value={material} onValueChange={setMaterial}>
           <SelectTrigger className="h-9 text-xs">
             <div className="flex items-center gap-1.5 truncate">

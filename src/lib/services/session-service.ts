@@ -11,12 +11,11 @@ const LAST_ACTIVITY_KEY = `${STORAGE_PREFIX}:last_activity_timestamp`;
  * CARA MENGATUR DURASI SECARA MANUAL:
  * Ubah angka `INACTIVITY_TIMEOUT_HOURS` di bawah ini (dalam satuan jam).
  * Contoh:
- *   - 1     => 1 Jam Non-Aktif (Default)
- *   - 0.5   => 30 Menit Non-Aktif
- *   - 2     => 2 Jam Non-Aktif
+ *   - 1     => 1 Jam Non-Aktif
+ *   - 2     => 2 Jam Non-Aktif (Default)
  *   - 8     => 8 Jam Non-Aktif
  */
-export const INACTIVITY_TIMEOUT_HOURS = 1;
+export const INACTIVITY_TIMEOUT_HOURS = 2;
 export const INACTIVITY_TIMEOUT_MS = INACTIVITY_TIMEOUT_HOURS * 60 * 60 * 1000;
 
 export type Session = { userId: string; loggedInAt: string } | null;
