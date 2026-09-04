@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { BookOpenText, Heart, LogIn, Sparkles } from "lucide-react";
+import { BookOpenText, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 
 export const Route = createFileRoute("/logout")({
   head: () => ({
@@ -19,94 +18,65 @@ export const Route = createFileRoute("/logout")({
 
 function LogoutPage() {
   const navigate = useNavigate();
-  const [countdown, setCountdown] = useState(3);
+  const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          void navigate({ to: "/login" });
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const timer = setTimeout(() => {
+      setIsExiting(true);
+      setTimeout(() => {
+        void navigate({ to: "/login" });
+      }, 250);
+    }, 500);
 
-    return () => clearInterval(timer);
+    return () => clearTimeout(timer);
   }, [navigate]);
 
-  const progressValue = (countdown / 3) * 100;
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 px-4 py-8">
-      <div className="w-full max-w-md text-center space-y-6 bg-card/80 backdrop-blur-md border border-border/60 p-6 sm:p-8 rounded-2xl shadow-2xl animate-in zoom-in-95 fade-in duration-500">
+    <div className={`flex min-h-screen items-center justify-center bg-muted/30 px-4 py-8 overflow-hidden transition-all duration-300 ${isExiting ? "opacity-0 scale-98" : "animate-fade-in"}`}>
+      <div className="w-full max-w-sm text-center space-y-6 bg-card/90 backdrop-blur-xl border border-border/80 p-8 rounded-3xl shadow-xl animate-zoom-in">
         {/* Logo */}
-        <div className="mx-auto grid size-20 place-items-center rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/10">
-          <BookOpenText className="size-10" />
-        </div>
-
-        {/* Heart Icon Animated */}
-        <div className="flex justify-center items-center gap-1.5">
-          <Sparkles className="size-5 text-amber-500 animate-spin" />
-          <Heart className="size-8 text-primary animate-pulse" />
-          <Sparkles className="size-5 text-amber-500 animate-spin" />
-        </div>
-
-        {/* Islamic Farewell Message */}
-        <div className="space-y-2">
-          <h1
-            className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground leading-tight"
-            style={{ fontFamily: "'Plus Jakarta Sans', serif" }}
-          >
-            Jazakumullahu Khairan
-          </h1>
-          <p
-            className="text-lg sm:text-xl font-bold text-primary leading-snug"
-            style={{ fontFamily: "'Plus Jakarta Sans', serif" }}
-          >
-            Barakallahu Fikum
-            <br />
-            wa Zadakumullahu Ilman 🌟
-          </p>
-        </div>
-
-        {/* Motivational Message */}
-        <div className="space-y-2 px-2 bg-primary/5 p-4 rounded-xl border border-primary/10">
-          <p className="text-sm sm:text-base font-semibold text-primary">
-            Semangat Selalu Pengajar Al-Qur'an!
-          </p>
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Terima kasih atas dedikasi dan ikhtiar Anda dalam mendidik serta menyimak setoran Al-Qur'an.
-            Semoga Allah Subhanahu wa Ta'ala senantiasa memberkahi ilmu, hafalan, dan mengganjar Anda dengan sebaik-baik balasan.
-          </p>
-        </div>
-
-        {/* Visual 3-Second Countdown */}
-        <div className="space-y-2 pt-2">
-          <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
-            <span>Mengarahkan ke Form Login...</span>
-            <span className="text-primary font-bold text-sm">{countdown} Detik</span>
+        <div className="relative mx-auto flex items-center justify-center">
+          <div className="absolute size-20 rounded-full bg-primary/20 animate-pulse-ring" />
+          <div className="relative grid size-16 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
+            <BookOpenText className="size-8" />
           </div>
-          <Progress value={progressValue} className="h-2 bg-primary/15" />
+        </div>
+
+        {/* Islamic Farewell Messages */}
+        <div className="space-y-3">
+          <h1 className="text-xl sm:text-2xl font-serif font-bold text-primary leading-relaxed">
+            السلام عليكم ورحمة الله وبركاته
+          </h1>
+          <h2 className="text-lg font-serif font-bold text-foreground">
+            جزاكم الله خيرًا
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Sampai jumpa, semoga Allah memberkahi aktivitas Anda.
+          </p>
         </div>
 
         {/* Instant Manual Button */}
         <div className="pt-2">
           <Button
-            onClick={() => void navigate({ to: "/login" })}
-            className="w-full gap-2.5 h-11 text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200"
+            onClick={() => {
+              setIsExiting(true);
+              setTimeout(() => {
+                void navigate({ to: "/login" });
+              }, 200);
+            }}
+            className="w-full gap-2 h-10 text-xs font-semibold shadow-md"
           >
             <LogIn className="size-4" />
-            <span>Ke Form Login Sekarang ({countdown}s)</span>
+            <span>Kembali ke Login</span>
           </Button>
         </div>
 
         {/* Footer Branding */}
-        <p className="text-[11px] text-muted-foreground/60 pt-1">
+        <p className="text-[11px] text-muted-foreground/60">
           Griya Huffazh Quran — Upgrading System
         </p>
       </div>
     </div>
   );
 }
+

@@ -331,7 +331,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       logout();
       setLogoutLoading(false);
       void navigate({ to: "/logout" });
-    }, 800);
+    }, 600);
   };
 
   const mobileNavItems = getMobileNav(role);
@@ -523,12 +523,35 @@ export function AppShell({ children }: { children: ReactNode }) {
         </DialogContent>
       </Dialog>
 
-      {/* Logout Loading Overlay */}
+      {/* Logout Loading & Islamic Farewell Overlay */}
       {logoutLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs text-white animate-fade-in">
-          <div className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-card text-card-foreground shadow-2xl border border-border">
-            <Loader2 className="size-8 animate-spin text-primary" />
-            <p className="text-sm font-semibold">Sedang keluar dari akun...</p>
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-md text-foreground animate-fade-in transition-all duration-500">
+          <div className="flex flex-col items-center text-center p-8 rounded-3xl bg-card border border-primary/20 shadow-2xl space-y-5 max-w-sm w-full mx-4 animate-zoom-in">
+            {/* Logo Badge & Ring */}
+            <div className="relative flex items-center justify-center">
+              <div className="absolute size-20 rounded-full bg-primary/20 animate-pulse-ring" />
+              <div className="relative grid size-14 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
+                <BookOpenText className="size-7" />
+              </div>
+            </div>
+
+            {/* Islamic Farewell Greetings */}
+            <div className="space-y-2 py-1">
+              <h3 className="font-serif text-xl sm:text-2xl font-bold text-primary animate-fade-up">
+                السلام عليكم ورحمة الله وبركاته
+              </h3>
+              <p className="font-serif text-lg font-bold text-foreground animate-fade-up">
+                جزاكم الله خيرًا
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed pt-1 animate-fade-in">
+                Sampai jumpa, semoga Allah memberkahi aktivitas Anda.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-semibold text-primary pt-1">
+              <Loader2 className="size-4 animate-spin text-primary" />
+              <span>Memproses keluar akun...</span>
+            </div>
           </div>
         </div>
       )}

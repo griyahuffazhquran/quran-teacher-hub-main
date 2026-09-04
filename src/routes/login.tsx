@@ -32,6 +32,13 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+const LOGIN_STEPS = [
+  { main: "بِسْمِ اللَّهِ", sub: "Memulai dengan menyebut nama Allah..." },
+  { main: "السلام عليكم ورحمة الله وبركاته", sub: "Semoga keselamatan dan rahmat Allah tercurah" },
+  { main: "Memverifikasi akun…", sub: "Mengecek kredensial akun Anda..." },
+  { main: "Menyiapkan halaman Anda…", sub: "Membuka Dashboard Griya Huffazh Quran..." },
+];
+
 function LoginPage() {
   const navigate = useNavigate();
   const { user, ready } = useSession();
@@ -40,6 +47,8 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loginStep, setLoginStep] = useState(0);
+  const [isExiting, setIsExiting] = useState(false);
   const [welcomeUser, setWelcomeUser] = useState<Teacher | null>(null);
 
   // Forgot Password Modal State
@@ -52,15 +61,28 @@ function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (ready && user && !welcomeUser) void navigate({ to: "/" });
-  }, [ready, user, navigate, welcomeUser]);
+    if (ready && user && !welcomeUser && !loading && !isExiting) {
+      void navigate({ to: "/" });
+    }
+  }, [ready, user, navigate, welcomeUser, loading, isExiting]);
 
   const handleLogin = async (u: string, p: string) => {
+    if (loading || isExiting) return;
     setError(null);
     setLoading(true);
+    setLoginStep(0);
+    setIsExiting(false);
+
+    // Timers for stepwise Islamic greetings
+    const timer1 = setTimeout(() => setLoginStep(1), 200);
+    const timer2 = setTimeout(() => setLoginStep(2), 450);
 
     try {
       const result = await loginAsync(u, p);
+
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+
       if (!result.ok) {
         let msg = result.error || "Gagal masuk.";
         if (msg.includes("Action POST tidak dikenal") || msg.toLowerCase().includes("action")) {
@@ -70,34 +92,38 @@ function LoginPage() {
         setErrorMessage(msg);
         setErrorDialogOpen(true);
         setLoading(false);
+        setLoginStep(0);
         return;
       }
-      if (!result.user) {
-        const msg = "Username atau Password yang Anda masukkan salah. Silakan periksa kembali data login Anda.";
-        setError(msg);
-        setErrorMessage(msg);
-        setErrorDialogOpen(true);
-        setLoading(false);
-        return;
-      }
-      setLoading(false);
+
+      // Login success: Advance to step 3 ("Menyiapkan halaman Anda...") and trigger smooth transition
+      setLoginStep(3);
       setWelcomeUser(result.user);
 
+      // Smooth slide-up transition to dashboard (~350ms)
       setTimeout(() => {
-        void navigate({ to: "/" });
-      }, 2500);
+        setIsExiting(true);
+        setTimeout(() => {
+          void navigate({ to: "/" });
+        }, 350);
+      }, 300);
+
     } catch (err) {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
       console.error("Login failed:", err);
       const msg = "Username atau Password yang Anda masukkan salah. Silakan periksa kembali data login Anda.";
       setError(msg);
       setErrorMessage(msg);
       setErrorDialogOpen(true);
       setLoading(false);
+      setLoginStep(0);
     }
   };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading || isExiting) return;
     if (!username || !password) {
       setError("Username dan password harus diisi.");
       return;
@@ -130,6 +156,7 @@ function LoginPage() {
   const goToDashboard = () => {
     void navigate({ to: "/" });
   };
+
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-muted/30 px-4 py-10 overflow-hidden">
@@ -217,7 +244,7 @@ function LoginPage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full h-10 font-semibold shadow-md gap-2" disabled={loading}>
+            <Button type="submit" className="w-full h-10 font-semibold shadow-md gap-2" disabled={loading || isExiting}>
               {loading ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
@@ -230,6 +257,68 @@ function LoginPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Premium Islamic Loading & Transition Overlay */}
+      {loading && (
+        <div
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/85 backdrop-blur-md transition-all duration-300 ${
+            isExiting ? "animate-fade-out opacity-0 pointer-events-none" : "animate-fade-in"
+          }`}
+        >
+          <div
+            className={`relative flex flex-col items-center text-center p-8 rounded-3xl bg-card/95 border border-primary/20 shadow-2xl space-y-6 max-w-sm w-full mx-4 transition-all duration-300 ${
+              isExiting ? "animate-slide-up-out" : "animate-zoom-in"
+            }`}
+          >
+            {/* Branding Logo & Pulse Glow Ring */}
+            <div className="relative flex items-center justify-center">
+              <div className="absolute size-20 rounded-full bg-primary/20 animate-pulse-ring" />
+              <div className="relative grid size-16 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-xl shadow-primary/30">
+                <BookOpenText className="size-8" />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold tracking-tight text-primary uppercase">
+                Griya Huffazh Quran
+              </h3>
+              <p className="text-[11px] text-muted-foreground">Upgrading & Evaluasi Setoran Guru</p>
+            </div>
+
+            {/* Stepwise Islamic Greetings & Status Text */}
+            <div className="space-y-2 py-2 min-h-[72px] flex flex-col items-center justify-center w-full">
+              <p
+                key={loginStep}
+                className={`font-bold transition-all duration-300 animate-fade-up ${
+                  loginStep <= 1
+                    ? "text-xl sm:text-2xl font-serif text-primary leading-relaxed"
+                    : "text-base font-semibold text-foreground"
+                }`}
+              >
+                {LOGIN_STEPS[loginStep]?.main ?? ""}
+              </p>
+              <p key={`sub-${loginStep}`} className="text-xs text-muted-foreground animate-fade-in">
+                {LOGIN_STEPS[loginStep]?.sub ?? ""}
+              </p>
+            </div>
+
+            {/* Loading Ring / Step Bar */}
+            <div className="w-full space-y-2 pt-1">
+              <div className="flex justify-between items-center text-[10px] font-semibold text-muted-foreground px-1">
+                <span>Progres Masuk</span>
+                <span className="text-primary">{Math.min(100, (loginStep + 1) * 25)}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-primary/15 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-300 rounded-full"
+                  style={{ width: `${Math.min(100, (loginStep + 1) * 25)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Forgot Password Modal Dialog */}
       <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
@@ -304,34 +393,6 @@ function LoginPage() {
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Islamic Welcome Success Popup Dialog */}
-      <Dialog open={!!welcomeUser} onOpenChange={() => goToDashboard()}>
-        <DialogContent className="max-w-md text-center p-6 space-y-4">
-          <div className="mx-auto grid size-16 place-items-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 animate-bounce">
-            <CheckCircle2 className="size-8" />
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="text-2xl font-bold tracking-tight text-foreground font-serif">
-              Assalamu'alaikum
-            </h3>
-            <p className="text-lg font-bold text-primary">
-              Ahlan wa Sahlan, {welcomeUser?.name}
-            </p>
-            <p className="text-xs text-muted-foreground leading-relaxed pt-1">
-              Berhasil masuk ke Sistem Upgrading & Evaluasi Tahfizh Griya Huffazh Quran.
-              Semoga Allah memberikan keberkahan dan kemudahan dalam setiap aktivitas hari ini.
-            </p>
-          </div>
-
-          <div className="pt-3">
-            <Button onClick={goToDashboard} className="w-full gap-2 shadow-md">
-              <span>Lanjut ke Dashboard</span>
-            </Button>
-          </div>
         </DialogContent>
       </Dialog>
 
