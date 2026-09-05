@@ -45,7 +45,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ListPagination } from "@/components/ui/pagination";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { useCollection } from "@/hooks/use-repository";
 import { useSession } from "@/hooks/use-session";
@@ -495,6 +497,10 @@ export function AchievementsPage() {
     setAwardDialogOpen(false);
   };
 
+  const [page, setPage] = useState(1);
+  const totalPages = Math.ceil(leaderboard.length / 10);
+  const paginatedLeaderboard = leaderboard.slice((page - 1) * 10, page * 10);
+
   return (
     <AppShell>
       <div className="space-y-6">
@@ -678,43 +684,55 @@ export function AchievementsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {leaderboard.map((item, idx) => (
-                      <tr
-                        key={item.teacher.id}
-                        onClick={() => setSelectedTeacherDetail({ ...item, rankIndex: idx })}
-                        className={`hover:bg-primary/10 transition-colors cursor-pointer ${
-                          item.teacher.id === user?.id ? "bg-primary/5 font-medium" : ""
-                        }`}
-                      >
-                        <td className="p-3 text-center font-bold text-foreground">
-                          {idx === 0 ? "🥇 #1" : idx === 1 ? "🥈 #2" : idx === 2 ? "🥉 #3" : `#${idx + 1}`}
-                        </td>
-                        <td className="p-3 font-semibold text-foreground flex items-center gap-2">
-                          <span>{item.teacher.name}</span>
-                          {item.teacher.id === user?.id && (
-                            <Badge variant="outline" className="text-[10px] text-primary border-primary">
-                              Anda
-                            </Badge>
-                          )}
-                        </td>
-                        <td className="p-3">
-                          <span className="inline-flex items-center gap-1 font-medium">
-                            <span>{item.currentRank.badge}</span>
-                            <span className={item.currentRank.color}>{item.currentRank.title}</span>
-                          </span>
-                        </td>
-                        <td className="p-3 text-center text-muted-foreground">{item.setoranCount}</td>
-                        <td className="p-3 text-center text-muted-foreground">{item.mustamiCount}</td>
-                        <td className="p-3 text-center text-muted-foreground">{item.completedTargetsCount}</td>
-                        <td className="p-3 text-center text-muted-foreground">{item.unlockedBadgesCount}</td>
-                        <td className="p-3 text-right font-extrabold text-emerald-600 dark:text-emerald-400">
-                          {item.totalXp} XP
-                        </td>
-                      </tr>
-                    ))}
+                    {paginatedLeaderboard.map((item, idx) => {
+                      const realIndex = (page - 1) * 10 + idx;
+                      return (
+                        <tr
+                          key={item.teacher.id}
+                          onClick={() => setSelectedTeacherDetail({ ...item, rankIndex: realIndex })}
+                          className={`hover:bg-primary/10 transition-colors cursor-pointer ${
+                            item.teacher.id === user?.id ? "bg-primary/5 font-medium" : ""
+                          }`}
+                        >
+                          <td className="p-3 text-center font-bold text-foreground">
+                            {realIndex === 0 ? "🥇 #1" : realIndex === 1 ? "🥈 #2" : realIndex === 2 ? "🥉 #3" : `#${realIndex + 1}`}
+                          </td>
+                          <td className="p-3 font-semibold text-foreground flex items-center gap-2">
+                            <span>{item.teacher.name}</span>
+                            {item.teacher.id === user?.id && (
+                              <Badge variant="outline" className="text-[10px] text-primary border-primary">
+                                Anda
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            <span className="inline-flex items-center gap-1 font-medium">
+                              <span>{item.currentRank.badge}</span>
+                              <span className={item.currentRank.color}>{item.currentRank.title}</span>
+                            </span>
+                          </td>
+                          <td className="p-3 text-center text-muted-foreground">{item.setoranCount}</td>
+                          <td className="p-3 text-center text-muted-foreground">{item.mustamiCount}</td>
+                          <td className="p-3 text-center text-muted-foreground">{item.completedTargetsCount}</td>
+                          <td className="p-3 text-center text-muted-foreground">{item.unlockedBadgesCount}</td>
+                          <td className="p-3 text-right font-extrabold text-emerald-600 dark:text-emerald-400">
+                            {item.totalXp} XP
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </CardContent>
+              <div className="p-4 border-t border-border">
+                <ListPagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                  totalItems={leaderboard.length}
+                  pageSize={10}
+                />
+              </div>
             </Card>
           </TabsContent>
 

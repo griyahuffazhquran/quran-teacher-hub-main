@@ -19,9 +19,6 @@ async function getServerEntry(): Promise<ServerEntry> {
   return serverEntryPromise;
 }
 
-// Global in-memory presence map on the server process (shared across all devices)
-const serverPresenceMap: Record<string, any> = {};
-
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
@@ -55,58 +52,6 @@ export default {
     // Backend SQLite REST API Handler
     if (url.pathname.startsWith("/api/db")) {
       return handleBackendApi(request);
-    }
-
-    // Custom Universal Real-Time Presence API Endpoint
-    if (url.pathname === "/api/presence") {
-      const corsHeaders = {
-        "content-type": "application/json; charset=utf-8",
-        "access-control-allow-origin": "*",
-        "access-control-allow-methods": "GET, POST, OPTIONS",
-        "access-control-allow-headers": "Content-Type",
-      };
-
-      if (request.method === "OPTIONS") {
-        return new Response(null, { headers: corsHeaders });
-      }
-
-      if (request.method === "POST") {
-        try {
-          const body = (await request.json()) as any;
-          if (body && body.userId) {
-            serverPresenceMap[body.userId] = {
-              ...body,
-              lastSeenAt: Date.now(),
-            };
-          }
-          const now = Date.now();
-          for (const id in serverPresenceMap) {
-            if (now - serverPresenceMap[id].lastSeenAt > 40000) {
-              delete serverPresenceMap[id];
-            }
-          }
-          return new Response(JSON.stringify({ ok: true, presenceMap: serverPresenceMap }), {
-            headers: corsHeaders,
-          });
-        } catch {
-          return new Response(JSON.stringify({ ok: false, error: "Invalid JSON" }), {
-            status: 400,
-            headers: corsHeaders,
-          });
-        }
-      }
-
-      if (request.method === "GET") {
-        const now = Date.now();
-        for (const id in serverPresenceMap) {
-          if (now - serverPresenceMap[id].lastSeenAt > 40000) {
-            delete serverPresenceMap[id];
-          }
-        }
-        return new Response(JSON.stringify({ ok: true, presenceMap: serverPresenceMap }), {
-          headers: corsHeaders,
-        });
-      }
     }
 
     try {

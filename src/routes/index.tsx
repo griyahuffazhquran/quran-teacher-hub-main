@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   ArrowUpDown,
@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ListPagination } from "@/components/ui/pagination";
 import { useCollection } from "@/hooks/use-repository";
 import { useSession } from "@/hooks/use-session";
 import { reportRepo, teacherRepo } from "@/lib/data/repositories";
@@ -274,6 +275,18 @@ function Dashboard() {
     });
   };
 
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, dateFilter, materialFilter, gradeFilter, statusFilter, sortBy]);
+
+  const userScopedReports = useMemo(() => {
+    if (!user) return [];
+    if (isUpgrader) return reports;
+    return reports.filter((r) => r.teacherId === user.id || r.mustamiId === user.id);
+  }, [reports, user, isUpgrader]);
+
   const filteredProgress = useMemo(
     () => filterAndSort(scopeProgress),
     [scopeProgress, query, dateFilter, materialFilter, gradeFilter, statusFilter, sortBy, teachers],
@@ -285,8 +298,8 @@ function Dashboard() {
   );
 
   const filteredAll = useMemo(
-    () => filterAndSort(reports),
-    [reports, query, dateFilter, materialFilter, gradeFilter, statusFilter, sortBy, teachers],
+    () => filterAndSort(userScopedReports),
+    [userScopedReports, query, dateFilter, materialFilter, gradeFilter, statusFilter, sortBy, teachers],
   );
 
   // Actions
@@ -369,37 +382,47 @@ function Dashboard() {
       );
     }
 
-    if (viewMode === "table") {
-      return (
-        <ReportTable
-          reports={rows}
-          teachers={teachers}
-          canEdit={canEdit}
-          currentUserId={user?.id}
-          onSelect={handleOpenDetail}
-          onEdit={handleEdit}
-          onDelete={(rep) => setDeleteTargetReport(rep)}
-          onToggleHomework={handleToggleHomework}
-        />
-      );
-    }
+    const totalPages = Math.ceil(rows.length / 10);
+    const paginatedRows = rows.slice((page - 1) * 10, page * 10);
 
     return (
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 animate-fade-up">
-        {rows.map((r) => (
-          <ReportCard
-            key={r.id}
-            report={r}
+      <div className="space-y-4">
+        {viewMode === "table" ? (
+          <ReportTable
+            reports={paginatedRows}
             teachers={teachers}
             canEdit={canEdit}
+            currentUserId={user?.id}
             onSelect={handleOpenDetail}
             onEdit={handleEdit}
             onDelete={(rep) => setDeleteTargetReport(rep)}
-            {...(r.homework && (canEdit || r.teacherId === user?.id)
-              ? { onToggleHomework: handleToggleHomework }
-              : {})}
+            onToggleHomework={handleToggleHomework}
           />
-        ))}
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 animate-fade-up">
+            {paginatedRows.map((r) => (
+              <ReportCard
+                key={r.id}
+                report={r}
+                teachers={teachers}
+                canEdit={canEdit}
+                onSelect={handleOpenDetail}
+                onEdit={handleEdit}
+                onDelete={(rep) => setDeleteTargetReport(rep)}
+                {...(r.homework && (canEdit || r.teacherId === user?.id)
+                  ? { onToggleHomework: handleToggleHomework }
+                  : {})}
+              />
+            ))}
+          </div>
+        )}
+        <ListPagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={rows.length}
+          pageSize={10}
+        />
       </div>
     );
   };

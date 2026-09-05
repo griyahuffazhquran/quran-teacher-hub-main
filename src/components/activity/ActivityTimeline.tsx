@@ -9,9 +9,11 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
+import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCollection } from "@/hooks/use-repository";
+import { useSession } from "@/hooks/use-session";
 import { activityRepo } from "@/lib/data/repositories";
 import type { ActivityLog } from "@/lib/data/types";
 import { listActivityLogs } from "@/lib/services/notification-service";
@@ -79,9 +81,27 @@ function formatRelativeTime(dateISO: string): string {
   return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
 }
 
-export function ActivityTimeline({ limit = 15 }: { limit?: number }) {
+export function ActivityTimeline({
+  limit = 15,
+  userId,
+  userName,
+}: {
+  limit?: number;
+  userId?: string;
+  userName?: string;
+}) {
+  const { user, isUpgrader } = useSession();
   const { rows: logs } = useCollection(activityRepo);
-  const recentLogs = listActivityLogs(logs, limit);
+
+  const targetUserId = userId ?? user?.id;
+  const targetUserName = userName ?? user?.name;
+
+  const recentLogs = useMemo(() => {
+    if (isUpgrader && !userId) {
+      return [...logs].sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")).slice(0, limit);
+    }
+    return listActivityLogs(logs, limit, targetUserId, targetUserName);
+  }, [logs, limit, isUpgrader, userId, targetUserId, targetUserName]);
 
   if (recentLogs.length === 0) {
     return (

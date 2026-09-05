@@ -50,9 +50,21 @@ export function logActivity(input: {
   });
 }
 
-export function notificationsFor(rows: NotificationItem[], userId?: string): NotificationItem[] {
+export function notificationsFor(rows: NotificationItem[], userId?: string, userName?: string): NotificationItem[] {
+  if (!userId) return [];
+  const nameNorm = userName ? userName.trim().toLowerCase() : "";
   return rows
-    .filter((n) => !n.userId || n.userId === userId)
+    .filter((n) => {
+      if (!n) return false;
+      if (n.userId) return n.userId === userId;
+      if (nameNorm && (n.body?.toLowerCase().includes(nameNorm) || n.title?.toLowerCase().includes(nameNorm))) {
+        return true;
+      }
+      if (n.type === "ANNOUNCEMENT_CREATED" || n.type === "SYSTEM") {
+        return true;
+      }
+      return false;
+    })
     .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
 }
 
@@ -82,6 +94,21 @@ export function clearAllNotifications(userId?: string): void {
   }
 }
 
-export function listActivityLogs(logs: ActivityLog[], limit = 20): ActivityLog[] {
-  return [...logs].sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")).slice(0, limit);
+export function listActivityLogs(
+  logs: ActivityLog[],
+  limit = 20,
+  userId?: string,
+  userName?: string,
+): ActivityLog[] {
+  const nameNorm = userName ? userName.trim().toLowerCase() : "";
+  const filtered = logs.filter((log) => {
+    if (!log) return false;
+    if (!userId) return true;
+    if (log.actorId === userId) return true;
+    if (nameNorm && (log.description?.toLowerCase().includes(nameNorm) || log.actorName?.toLowerCase().includes(nameNorm))) {
+      return true;
+    }
+    return false;
+  });
+  return [...filtered].sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")).slice(0, limit);
 }

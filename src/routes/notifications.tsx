@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ListPagination } from "@/components/ui/pagination";
 import { useCollection } from "@/hooks/use-repository";
 import { useSession } from "@/hooks/use-session";
 import { notificationRepo, reportRepo, teacherRepo } from "@/lib/data/repositories";
@@ -83,13 +84,15 @@ function Page() {
   const reports = useMemo(() => activeReports(reportRows), [reportRows]);
 
   const userNotifications = useMemo(
-    () => notificationsFor(allNotifications, user?.id),
+    () => notificationsFor(allNotifications, user?.id, user?.name),
     [allNotifications, user],
   );
 
   const unread = unreadCount(userNotifications);
 
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
+
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
@@ -102,6 +105,9 @@ function Page() {
       return n.type === typeFilter;
     });
   }, [userNotifications, typeFilter]);
+
+  const totalPages = Math.ceil(filteredNotifications.length / 10);
+  const paginatedNotifications = filteredNotifications.slice((page - 1) * 10, page * 10);
 
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [clearAllConfirmOpen, setClearAllConfirmOpen] = useState(false);
@@ -203,7 +209,7 @@ function Page() {
             </Card>
           ) : (
             <div className="space-y-2.5 animate-fade-up">
-              {filteredNotifications.map((n) => {
+              {paginatedNotifications.map((n) => {
                 const iconInfo = getNotificationIcon(n.type);
                 const IconComp = iconInfo.icon;
 
@@ -285,6 +291,13 @@ function Page() {
                   </Card>
                 );
               })}
+              <ListPagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                totalItems={filteredNotifications.length}
+                pageSize={10}
+              />
             </div>
           )}
         </TabsContent>

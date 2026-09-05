@@ -9,7 +9,6 @@ import {
   UserRound,
   Megaphone,
   Award,
-  Activity,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/lib/data/types";
@@ -26,7 +25,6 @@ export function getPrimaryNav(role?: UserRole): NavItem[] {
   if (role === "upgrader") {
     return [
       { label: "Dashboard", to: "/", icon: LayoutDashboard },
-      { label: "User Online", to: "/active-users", icon: Activity },
       { label: "Setoran", to: "/reports", icon: ClipboardList },
       { label: "Target", to: "/targets", icon: Target },
       { label: "Leaderboard & Lencana", to: "/achievements", icon: Award },

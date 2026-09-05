@@ -99,6 +99,17 @@ export function TeacherFormDialog({
           <div className="sm:col-span-2">{field("name", "Nama", "Ust. Ahmad Fauzan")}</div>
           {field("username", "Username", "ahmad.fauzan")}
           <div className="space-y-2">
+            <Label htmlFor="password">Password Default</Label>
+            <Input
+              id="password"
+              type="text"
+              value={form.password || "12345"}
+              readOnly
+              disabled
+              className="bg-muted text-muted-foreground font-mono cursor-not-allowed"
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
             <Select value={form.role} onValueChange={(v) => set("role", v as TeacherInput["role"])}>
               <SelectTrigger id="role">

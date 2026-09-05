@@ -55,7 +55,7 @@ export function formatDate(dateISO: string | undefined | null): string {
   if (!s) return "—";
 
   let parsableDate = s;
-  const match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  const match = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
   if (match) {
     const day = match[1]!.padStart(2, "0");
     const month = match[2]!.padStart(2, "0");
@@ -67,6 +67,7 @@ export function formatDate(dateISO: string | undefined | null): string {
     const d = new Date(parsableDate);
     if (isNaN(d.getTime())) return s;
     return d.toLocaleDateString("id-ID", {
+      timeZone: "Asia/Jakarta",
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -165,6 +166,7 @@ export function formatDateTime(dateISO: string | undefined | null): { date: stri
     if (isNaN(d.getTime())) return { date: s, time: "", full: s };
 
     const dateStr = d.toLocaleDateString("id-ID", {
+      timeZone: "Asia/Jakarta",
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -176,8 +178,10 @@ export function formatDateTime(dateISO: string | undefined | null): { date: stri
     }
 
     const timeStr = d.toLocaleTimeString("id-ID", {
+      timeZone: "Asia/Jakarta",
       hour: "2-digit",
       minute: "2-digit",
+      hour12: false,
     });
 
     return {

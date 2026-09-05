@@ -85,7 +85,62 @@ const PaginationEllipsis = ({ className, ...props }: React.ComponentProps<"span"
     <span className="sr-only">More pages</span>
   </span>
 );
-PaginationEllipsis.displayName = "PaginationEllipsis";
+export function ListPagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+  totalItems,
+  pageSize = 10,
+}: {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  totalItems?: number;
+  pageSize?: number;
+}) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-border mt-4">
+      {totalItems !== undefined && (
+        <p className="text-xs text-muted-foreground">
+          Menampilkan <span className="font-semibold text-foreground">{Math.min((currentPage - 1) * pageSize + 1, totalItems)}</span>–<span className="font-semibold text-foreground">{Math.min(currentPage * pageSize, totalItems)}</span> dari <span className="font-semibold text-foreground">{totalItems}</span> data
+        </p>
+      )}
+      <div className="flex items-center gap-1.5 ml-auto">
+        <button
+          type="button"
+          disabled={currentPage <= 1}
+          onClick={() => onPageChange(currentPage - 1)}
+          className={cn(
+            buttonVariants({ variant: "outline", size: "sm" }),
+            "h-8 px-2.5 text-xs font-medium gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+          )}
+        >
+          <ChevronLeft className="size-3.5" />
+          <span>Sebelumnya</span>
+        </button>
+
+        <span className="text-xs font-medium px-2.5 py-1 rounded-md bg-muted text-foreground">
+          {currentPage} / {totalPages}
+        </span>
+
+        <button
+          type="button"
+          disabled={currentPage >= totalPages}
+          onClick={() => onPageChange(currentPage + 1)}
+          className={cn(
+            buttonVariants({ variant: "outline", size: "sm" }),
+            "h-8 px-2.5 text-xs font-medium gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+          )}
+        >
+          <span>Selanjutnya</span>
+          <ChevronRight className="size-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export {
   Pagination,

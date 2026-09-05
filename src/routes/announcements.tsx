@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
+import { ListPagination } from "@/components/ui/pagination";
 import { useCollection } from "@/hooks/use-repository";
 import { useSession } from "@/hooks/use-session";
 import { announcementRepo } from "@/lib/data/repositories";
@@ -76,17 +77,20 @@ function AnnouncementsPage() {
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
+  const [page, setPage] = useState(1);
+  const totalPages = Math.ceil(list.length / 10);
+  const paginatedList = list.slice((page - 1) * 10, page * 10);
+
   return (
     <AppShell>
       <div className="space-y-6">
         <PageHeader
           title="Pengumuman Lembaga"
-          description="Pusat informasi resmi dan instruksi penting dari pengurus & upgrader Griya Huffazh Quran."
+          description="Informasi penting, pengumuman upgrading, dan instruksi pengajar."
           action={
             isUpgrader ? (
-              <Button onClick={handleCreate} className="gap-2 shadow-xs">
-                <Plus className="size-4" />
-                <span>Pengumuman Baru</span>
+              <Button onClick={handleCreate} className="gap-1.5 shadow-sm">
+                <Plus className="size-4" /> Buat Pengumuman
               </Button>
             ) : undefined
           }
@@ -108,7 +112,7 @@ function AnnouncementsPage() {
           </Card>
         ) : (
           <div className="grid gap-4">
-            {list.map((ann) => {
+            {paginatedList.map((ann) => {
               const isPendingDeadline = ann.dueDate && ann.dueDate >= todayStr;
               return (
                 <Card
@@ -170,7 +174,7 @@ function AnnouncementsPage() {
                           className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
                         >
                           <Pin className="size-3.5" />
-                          <span>{ann.pinned ? "Lepas Sematan" : "Sematkan"}</span>
+                          <span>{ann.pinned ? "Buka Sematan" : "Sematkan"}</span>
                         </Button>
                         <Button
                           variant="ghost"
@@ -196,6 +200,13 @@ function AnnouncementsPage() {
                 </Card>
               );
             })}
+            <ListPagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              totalItems={list.length}
+              pageSize={10}
+            />
           </div>
         )}
 

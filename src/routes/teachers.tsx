@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Plus, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { ListPagination } from "@/components/ui/pagination";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { exportTeachersCSV } from "@/lib/services/reporting-export-service";
@@ -121,6 +122,15 @@ function Page() {
     if (detail?.id === deleteTeacherTarget.id) setDetail(null);
   };
 
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, status, role, sort]);
+
+  const totalPages = Math.ceil(visible.length / 10);
+  const paginatedVisible = visible.slice((page - 1) * 10, page * 10);
+
   return (
     <AppShell>
       <PageHeader
@@ -132,9 +142,8 @@ function Page() {
               variant="outline"
               onClick={() => {
                 exportTeachersCSV(teachers);
-                toast.success("Master data guru berhasil diunduh (CSV).");
               }}
-              className="gap-1.5 shadow-xs text-xs h-9"
+              className="gap-1.5 text-xs h-9"
             >
               <Download className="size-3.5" />
               <span>Ekspor CSV</span>
@@ -223,7 +232,7 @@ function Page() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {visible.map((t) => {
+                  {paginatedVisible.map((t) => {
                     const own = reports.filter((r) => r.teacherId === t.id);
                     return (
                       <TableRow key={t.id} className="cursor-pointer" onClick={() => setDetail(t)}>
@@ -272,7 +281,7 @@ function Page() {
 
           {/* Mobile */}
           <div className="grid gap-3 md:hidden">
-            {visible.map((t) => (
+            {paginatedVisible.map((t) => (
               <Card key={t.id} onClick={() => setDetail(t)}>
                 <CardContent className="flex items-start gap-3 p-4">
                   <Avatar className="size-10">
@@ -305,6 +314,14 @@ function Page() {
               </Card>
             ))}
           </div>
+
+          <ListPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            totalItems={visible.length}
+            pageSize={10}
+          />
         </>
       )}
 

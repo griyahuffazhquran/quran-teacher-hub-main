@@ -50,6 +50,10 @@ export async function handleBackendApi(request: Request): Promise<Response> {
     const collectionName = segments[0];
     const id = segments[1];
 
+    if (!collectionName) {
+      return errorResponse("Nama koleksi tidak valid", 400);
+    }
+
     // 2. GET /api/db/:collection (List with query filters)
     if (request.method === "GET" && !id) {
       const queryParams: Record<string, string> = {};

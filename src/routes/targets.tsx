@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Bell,
@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ListPagination } from "@/components/ui/pagination";
 import { useCollection } from "@/hooks/use-repository";
 import { useSession } from "@/hooks/use-session";
 import {
@@ -135,6 +136,15 @@ function Page() {
   const activeCount = userTargets.filter((t) => t.status === "aktif").length;
   const completedCount = userTargets.filter((t) => t.status === "tercapai").length;
   const reminderCount = userReminders.filter((r) => !r.dismissed).length;
+
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, statusFilter, periodFilter, teacherFilter]);
+
+  const totalPages = Math.ceil(filteredTargets.length / 10);
+  const paginatedTargets = filteredTargets.slice((page - 1) * 10, page * 10);
 
   const handleOpenCreate = () => {
     setEditingTarget(undefined);
@@ -343,19 +353,28 @@ function Page() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 animate-fade-up">
-              {filteredTargets.map((t) => (
-                <TargetCard
-                  key={t.id}
-                  target={t}
-                  teachers={teachers}
-                  canEdit={isUpgrader || t.createdBy === user?.id || t.teacherId === user?.id}
-                  onSelect={handleSelectTarget}
-                  onEdit={handleEdit}
-                  onDelete={(target) => setDeleteTargetItem(target)}
-                  onAddReminder={handleAddReminderForTarget}
-                />
-              ))}
+            <div className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 animate-fade-up">
+                {paginatedTargets.map((t) => (
+                  <TargetCard
+                    key={t.id}
+                    target={t}
+                    teachers={teachers}
+                    canEdit={isUpgrader || t.createdBy === user?.id || t.teacherId === user?.id}
+                    onSelect={handleSelectTarget}
+                    onEdit={handleEdit}
+                    onDelete={(target) => setDeleteTargetItem(target)}
+                    onAddReminder={handleAddReminderForTarget}
+                  />
+                ))}
+              </div>
+              <ListPagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                totalItems={filteredTargets.length}
+                pageSize={10}
+              />
             </div>
           )}
         </TabsContent>

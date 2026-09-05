@@ -61,12 +61,17 @@ function ensureDateTimeISO(inputDate: string, existingISO?: string): string {
   const trimmed = inputDate.trim();
   if (trimmed.includes("T") && trimmed.length > 10) return trimmed;
 
-  const now = new Date();
-  const timePart = existingISO && existingISO.includes("T")
-    ? (existingISO.split("T")[1] || "")
-    : `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}.${String(now.getMilliseconds()).padStart(3, "0")}Z`;
+  if (existingISO && existingISO.includes("T")) {
+    const timePart = existingISO.split("T")[1];
+    return `${trimmed}T${timePart}`;
+  }
 
-  return `${trimmed}T${timePart || "00:00:00.000Z"}`;
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const hours = pad(now.getHours());
+  const mins = pad(now.getMinutes());
+  const secs = pad(now.getSeconds());
+  return `${trimmed}T${hours}:${mins}:${secs}+07:00`;
 }
 
 function toRow(input: ReportInput, mustami: Teacher, teacherNameStr?: string, existingISO?: string) {

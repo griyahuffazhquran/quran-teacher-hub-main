@@ -20,7 +20,7 @@ export function NotificationPopover() {
   const navigate = useNavigate();
   const { user } = useSession();
   const { rows: allRows, ready, repo } = useCollection(notificationRepo);
-  const notifications = notificationsFor(allRows, user?.id);
+  const notifications = notificationsFor(allRows, user?.id, user?.name);
   const unread = unreadCount(notifications);
   const recentNotifications = notifications.slice(0, 4);
 

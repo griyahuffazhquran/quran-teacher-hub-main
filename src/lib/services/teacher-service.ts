@@ -4,6 +4,7 @@ import type { Teacher, TeacherGender, TeacherStatus, UserRole } from "@/lib/data
 export type TeacherInput = {
   name: string;
   username: string;
+  password?: string;
   gender: TeacherGender;
   role: UserRole;
   position: string;
@@ -69,6 +70,7 @@ function toRow(input: TeacherInput) {
   return {
     name: input.name.trim(),
     username: input.username.trim().toLowerCase(),
+    password: input.password || "12345",
     gender: input.gender,
     role: input.role,
     position: input.position.trim(),
@@ -100,6 +102,7 @@ export function setTeacherStatus(id: string, status: TeacherStatus): Teacher | u
 export const emptyTeacherInput = (): TeacherInput => ({
   name: "",
   username: "",
+  password: "12345",
   gender: "ustadz",
   role: "teacher",
   position: "",
@@ -118,6 +121,7 @@ export const toInput = (t: Teacher): TeacherInput => {
   return {
     name: n.name,
     username: n.username,
+    password: n.password ?? "12345",
     gender: n.gender,
     role: n.role,
     position: n.position,
